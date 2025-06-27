@@ -15,7 +15,7 @@ namespace CardGeneratorBackend.DTO
         [Required, StringLength(8)]
         public string TextColor { get; init; }
 
-        [Required, StringLength(8)]
+        [Required]
         public string Name { get; init; }
 
         [JsonConstructor]

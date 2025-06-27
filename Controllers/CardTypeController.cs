@@ -54,6 +54,29 @@ namespace CardGeneratorBackend.Controllers
             }
         }
 
+        [HttpPatch("{id}")]
+        [ProducesResponseType<CardTypeDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+
+        public async Task<IActionResult> UpdateCardType(Guid id, [FromBody] CardTypeUpdateDTO updateDTO)
+        {
+            try
+            {
+                var updatedType = await mCardTypeService.UpdateCardTypeWithId(id, updateDTO);
+                return Ok(updatedType.GetDTO());
+            }
+            catch (EntityNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                mLogger.LogError(e, "Unexpected error");
+                return Problem("An unexpected server error has occurred");
+            }
+        }
+
         [HttpPut("{id}/image")]
         [ProducesResponseType<CardTypeDTO>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
