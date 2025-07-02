@@ -1,10 +1,9 @@
 using CardGeneratorBackend.Config;
 using CardGeneratorBackend.Environment;
+using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
 using CardGeneratorBackend.Services;
 using CardGeneratorBackend.Services.Impl;
-using Microsoft.Extensions.Options;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +29,9 @@ builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>()
 
 builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
 builder.Services.AddScoped<ICardTypeService, CardTypeServiceImpl>();
+builder.Services.AddScoped<ICardService, CardServiceImpl>();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var frontendUrl = builder.Configuration["FrontendURL"] ?? throw new ArgumentException("Frontend URL is not set");
 
@@ -56,11 +58,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.UseCors();
+app.UseExceptionHandler(_ => { });
 
 app.Run();

@@ -22,16 +22,8 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllCardTypes()
         {
-            try
-            {
-                var cardTypes = await mCardTypeService.GetAllCardTypes();
-                return Ok(cardTypes.Select(type => type.GetDTO()));
-            }
-            catch(Exception e)
-            {
-                mLogger.LogError(e, "Unexpected error");
-                return Problem("An unexpected server error has occurred");
-            }
+            var cardTypes = await mCardTypeService.GetAllCardTypes();
+            return Ok(cardTypes.Select(type => type.GetDTO()));
         }
 
         [HttpPost]
@@ -40,18 +32,10 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateCardType([FromBody] CardTypeCreationDTO cardTypeDTO)
         {
-            try
-            {
-                var cardTypeCreateData = cardTypeDTO.ToCreationEntity();
-                var insertedCardType = await mCardTypeService.CreateCardType(cardTypeCreateData);
+            var cardTypeCreateData = cardTypeDTO.ToCreationEntity();
+            var insertedCardType = await mCardTypeService.CreateCardType(cardTypeCreateData);
 
-                return Ok(insertedCardType.GetDTO());
-            }
-            catch (Exception e)
-            {
-                mLogger.LogError(e, "Unexpected error");
-                return Problem("An unexpected server error has occurred");
-            }
+            return Ok(insertedCardType.GetDTO());
         }
 
         [HttpPatch("{id}")]
@@ -61,20 +45,8 @@ namespace CardGeneratorBackend.Controllers
 
         public async Task<IActionResult> UpdateCardType(Guid id, [FromBody] CardTypeUpdateDTO updateDTO)
         {
-            try
-            {
-                var updatedType = await mCardTypeService.UpdateCardTypeWithId(id, updateDTO);
-                return Ok(updatedType.GetDTO());
-            }
-            catch (EntityNotFoundException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                mLogger.LogError(e, "Unexpected error");
-                return Problem("An unexpected server error has occurred");
-            }
+            var updatedType = await mCardTypeService.UpdateCardTypeWithId(id, updateDTO);
+            return Ok(updatedType.GetDTO());
         }
 
         [HttpPut("{id}/image")]
@@ -101,27 +73,15 @@ namespace CardGeneratorBackend.Controllers
                 return BadRequest("Uploaded file is not an image");
             }
 
-            try
-            {
-                using var stream = new MemoryStream();
-                await imageFile.CopyToAsync(stream);
+            using var stream = new MemoryStream();
+            await imageFile.CopyToAsync(stream);
 
-                stream.Position = 0;
-                var fileData = stream.ToArray();
+            stream.Position = 0;
+            var fileData = stream.ToArray();
 
-                var updatedType = await mCardTypeService.UpdateCardTypeImage(id, $"{Guid.NewGuid()}.{MimeTypesMap.GetExtension(mimeType)}", fileData);
+            var updatedType = await mCardTypeService.UpdateCardTypeImage(id, $"{Guid.NewGuid()}.{MimeTypesMap.GetExtension(mimeType)}", fileData);
 
-                return Ok(updatedType.GetDTO());
-            }
-            catch(EntityNotFoundException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch(Exception e)
-            {
-                mLogger.LogError(e, "Unexpected error");
-                return Problem("An unexpected server error has occurred");
-            }
+            return Ok(updatedType.GetDTO());
         }
     }
 }

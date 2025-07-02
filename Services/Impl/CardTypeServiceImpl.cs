@@ -11,6 +11,17 @@ namespace CardGeneratorBackend.Services.Impl
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ITrackedFileService mFileService = fileService;
 
+        private static IQueryable<CardType> GetDefaultCardTypeQuery(IQueryable<CardType> inQuery)
+        {
+            return inQuery.Include(type => type.ImageFile);
+        }
+
+        public async Task<CardType> GetCardTypeById(Guid id)
+        {
+            return await GetDefaultCardTypeQuery(mDatabaseContext.CardTypes.AsQueryable()).Where(type => type.Id == id).FirstOrDefaultAsync() 
+                ?? throw new EntityNotFoundException(typeof(CardType), id);
+        }
+
         public async Task<CardType> CreateCardType(CardType creationData)
         {
             var createdType = await mDatabaseContext.CardTypes.AddAsync(creationData) 
@@ -23,15 +34,14 @@ namespace CardGeneratorBackend.Services.Impl
 
         public async Task<IEnumerable<CardType>> GetAllCardTypes()
         {
-            return await mDatabaseContext.CardTypes.Include(t => t.ImageFile).OrderBy(t => t.Name).ToListAsync();
+            return await GetDefaultCardTypeQuery(mDatabaseContext.CardTypes.AsQueryable()).OrderBy(t => t.Name).ToListAsync();
         }
 
         public async Task<CardType> UpdateCardTypeImage(Guid typeId, string fileName, byte[] data)
         {
-            var type = await mDatabaseContext.CardTypes.Include(t => t.ImageFile).Where(t => t.Id == typeId).FirstOrDefaultAsync() 
-                ?? throw new EntityNotFoundException(typeof(CardType), typeId);
+            var type = await GetCardTypeById(typeId);
 
-            if(type.ImageFile is not null)
+            if (type.ImageFile is not null)
             {
                 await mFileService.DeleteFile(type.ImageFile);
             }
@@ -54,8 +64,7 @@ namespace CardGeneratorBackend.Services.Impl
 
         public async Task<CardType> UpdateCardTypeWithId(Guid typeId, CardTypeUpdateDTO updateDTO)
         {
-            var type = await mDatabaseContext.CardTypes.Include(t => t.ImageFile).Where(t => t.Id == typeId).FirstOrDefaultAsync()
-                ?? throw new EntityNotFoundException(typeof(CardType), typeId);
+            var type = await GetCardTypeById(typeId);
 
             if(updateDTO.BackgroundColorHexCode1 != null)
             {

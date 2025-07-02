@@ -3,6 +3,7 @@ using System;
 using CardGeneratorBackend.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CardGeneratorBackend.Migrations
 {
     [DbContext(typeof(CardDatabaseContext))]
-    partial class CardDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250629015326_AddedCardCreationDate")]
+    partial class AddedCardCreationDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,7 +32,7 @@ namespace CardGeneratorBackend.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int?>("Attack")
+                    b.Property<int>("Attack")
                         .HasColumnType("integer")
                         .HasColumnName("attack");
 
@@ -49,11 +52,11 @@ namespace CardGeneratorBackend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("effect");
 
-                    b.Property<int?>("Health")
+                    b.Property<int>("Health")
                         .HasColumnType("integer")
                         .HasColumnName("health");
 
-                    b.Property<int?>("Level")
+                    b.Property<int>("Level")
                         .HasColumnType("integer")
                         .HasColumnName("level");
 
@@ -62,18 +65,9 @@ namespace CardGeneratorBackend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.Property<string>("Quote")
-                        .HasColumnType("text")
-                        .HasColumnName("quote");
-
                     b.Property<Guid>("TypeId")
                         .HasColumnType("uuid")
                         .HasColumnName("type_id");
-
-                    b.Property<string>("Variant")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("variant");
 
                     b.HasKey("Id");
 

@@ -5,6 +5,8 @@ namespace CardGeneratorBackend.Services
 {
     public interface ICardTypeService
     {
+        public Task<CardType> GetCardTypeById(Guid id);
+
         public Task<IEnumerable<CardType>> GetAllCardTypes();
 
         public Task<CardType> CreateCardType(CardType creationData);

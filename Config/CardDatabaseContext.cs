@@ -10,6 +10,7 @@ namespace CardGeneratorBackend.Config
     {
         public DbSet<CardType> CardTypes { get; set; }
         public DbSet<TrackedFile> TrackedFiles { get; set; }
+        public DbSet<Card> Cards { get; set; }
 
         private readonly string mConnectionString = pgOptions.Value.ConnectionString;
 
@@ -25,6 +26,13 @@ namespace CardGeneratorBackend.Config
                 .HasConversion(
                     loc => loc.ToString(),
                     locStr => Enum.Parse<FileStorageLocation>(locStr)
+                );
+
+            modelBuilder.Entity<Card>()
+                .Property(card => card.Variant)
+                .HasConversion(
+                    variant => variant.ToString(),
+                    variantStr => Enum.Parse<CardVariant>(variantStr)
                 );
         }
     }
