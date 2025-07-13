@@ -56,5 +56,26 @@ namespace CardGeneratorBackend.Services.Impl
 
             return new(GetFileDownloadName(trackedFile), contents);
         }
+
+        public async Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data)
+        {
+            if(fileId is null)
+            {
+                if(newFile is null)
+                {
+                    throw new ArgumentException("Existing file ID and file creation info cannot both be null");
+                }
+
+                return await CreateAndWriteFile(newFile, data);
+            }
+
+            var trackedFile = await DatabaseContext.TrackedFiles.Where(file => file.Id == fileId).FirstOrDefaultAsync()
+                ?? throw new EntityNotFoundException(typeof(TrackedFile), fileId);
+
+            var ioHandler = FileIOHandlerFactory.GetIOHandler(trackedFile);
+
+            await ioHandler.WriteAllData(trackedFile, data);
+            return trackedFile;
+        }
     }
 }

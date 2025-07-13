@@ -10,5 +10,7 @@ namespace CardGeneratorBackend.Services
         public Task<PaginationDTO<Card>> GetCardsPaginated(int pageNum, int pageSize);
 
         public Task<Card> CreateCard(CardCreationDTO dto);
+
+        public Task<Card> UpdateCardWithId(Guid id, CardUpdateDTO dto);
     }
 }

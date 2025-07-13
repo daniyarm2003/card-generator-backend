@@ -31,6 +31,8 @@ builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
 builder.Services.AddScoped<ICardTypeService, CardTypeServiceImpl>();
 builder.Services.AddScoped<ICardService, CardServiceImpl>();
 
+builder.Services.AddScoped<IFileUploadValidationService, FileExistAndSizeValidator>();
+
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var frontendUrl = builder.Configuration["FrontendURL"] ?? throw new ArgumentException("Frontend URL is not set");

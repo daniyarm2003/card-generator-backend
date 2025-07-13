@@ -41,18 +41,11 @@ namespace CardGeneratorBackend.Services.Impl
         {
             var type = await GetCardTypeById(typeId);
 
-            if (type.ImageFile is not null)
+            type.ImageFile = await mFileService.WriteOrReplaceFileContents(type.ImageFile?.Id, new TrackedFile()
             {
-                await mFileService.DeleteFile(type.ImageFile);
-            }
-
-            var newImageFile = new TrackedFile() { 
                 Path = fileName,
                 StorageLocation = Enums.FileStorageLocation.Disk
-            };
-
-            newImageFile = await mFileService.CreateAndWriteFile(newImageFile, data);
-            type.ImageFile = newImageFile;
+            }, data);
 
             var savedTypeUpdateData = mDatabaseContext.CardTypes.Update(type);
             var savedType = savedTypeUpdateData.Entity;

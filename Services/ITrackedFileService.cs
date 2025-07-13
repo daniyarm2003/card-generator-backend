@@ -15,5 +15,7 @@ namespace CardGeneratorBackend.Services
         public string GetFileDownloadName(TrackedFile file);
 
         public Task<FileDownloadInfo> ReadFileWithId(Guid id);
+
+        public Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data);
     }
 }

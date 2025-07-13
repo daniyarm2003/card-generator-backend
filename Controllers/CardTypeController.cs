@@ -11,11 +11,11 @@ namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
     [Route("api/types")]
-    public class CardTypeController(ICardTypeService cardTypeService, ILogger<CardTypeController> logger, IOptions<FileUploadParameters> fileUploadOptions) : ControllerBase
+    public class CardTypeController(ICardTypeService cardTypeService, IOptions<FileUploadParameters> fileUploadOptions, IFileUploadValidationService fileUploadValidationService) : ControllerBase
     {
         private readonly ICardTypeService mCardTypeService = cardTypeService;
-        private readonly ILogger<CardTypeController> mLogger = logger;
         private readonly FileUploadParameters mFileUploadParams = fileUploadOptions.Value;
+        private readonly IFileUploadValidationService mFileUploadValidationService = fileUploadValidationService;
 
         [HttpGet]
         [ProducesResponseType<IEnumerable<CardTypeDTO>>(StatusCodes.Status200OK)]
@@ -56,13 +56,11 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateCardTypeImage(Guid id, IFormFile imageFile)
         {
-            if(imageFile is null)
+            var validationResult = await mFileUploadValidationService.ValidateFileUpload(this, imageFile);
+
+            if(validationResult is not null)
             {
-                return BadRequest("Image file was not provided");
-            }
-            else if(imageFile.Length > mFileUploadParams.MaxFileSizeBytesParsed)
-            {
-                return BadRequest($"Image file's size in bytes is greater than the maximum allowed size of {mFileUploadParams.MaxFileSizeBytesParsed}");
+                return validationResult;
             }
 
             var fileName = imageFile.FileName;

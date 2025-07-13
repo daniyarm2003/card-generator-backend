@@ -1,26 +1,10 @@
-﻿using CardGeneratorBackend.Enums;
+﻿using CardGeneratorBackend.DTO.Validation;
+using CardGeneratorBackend.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace CardGeneratorBackend.DTO
 {
-    public class RequiredWithCardVariant(CardVariant variant) : ValidationAttribute
-    {
-        private CardVariant Variant { get; init; } = variant;
-
-        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
-        {
-            var dto = (CardCreationDTO)validationContext.ObjectInstance;
-
-            if(dto.Variant != Variant)
-            {
-                return ValidationResult.Success;
-            }
-
-            return value is null ? new ValidationResult($"With card variant {Variant}, {validationContext.DisplayName} should not be null") : ValidationResult.Success;
-        }
-    }
-
     public record CardCreationDTO
     {
         [Required, StringLength(64)]

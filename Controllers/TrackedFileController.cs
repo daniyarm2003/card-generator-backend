@@ -9,10 +9,9 @@ namespace CardGeneratorBackend.Controllers
 
     [ApiController]
     [Route("api/files")]
-    public class TrackedFileController(ITrackedFileService fileService, ILogger<TrackedFileController> logger) : ControllerBase
+    public class TrackedFileController(ITrackedFileService fileService) : ControllerBase
     {
         private readonly ITrackedFileService mFileService = fileService;
-        private readonly ILogger<TrackedFileController> mLogger = logger;
 
         [HttpGet("{id}/content")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -20,25 +19,12 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ReadTrackedFile(Guid id)
         {
-            try
-            {
-                var fileDownloadInfo = await mFileService.ReadFileWithId(id);
-                var mimeType = MimeTypesMap.GetMimeType(fileDownloadInfo.Name) ?? "application/octet-stream";
+            var fileDownloadInfo = await mFileService.ReadFileWithId(id);
+            var mimeType = MimeTypesMap.GetMimeType(fileDownloadInfo.Name) ?? "application/octet-stream";
 
-                return new FileContentResult(fileDownloadInfo.Contents, mimeType)
-                {
-                    FileDownloadName = fileDownloadInfo.Name
-                };
-            }
-            catch(EntityNotFoundException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch(Exception e)
-            {
-                mLogger.LogError(e, "Unexpected error");
-                return Problem("An unexpected server error has occurred");
-            }
+            Response.Headers.CacheControl = "no-store";
+
+            return new FileContentResult(fileDownloadInfo.Contents, mimeType);
         }
     }
 }

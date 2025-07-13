@@ -8,14 +8,14 @@ namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
     [Route("/api/cards")]
-    public class CardController(ICardService cardService, IOptions<FileUploadParameters> fileUploadOptions) : ControllerBase
+    public class CardController(ICardService cardService) : ControllerBase
     {
         private readonly ICardService mCardService = cardService;
-        private readonly FileUploadParameters mFileUploadParams = fileUploadOptions.Value;
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllCards(int? pageNum, int? pageSize)
         {
@@ -41,6 +41,17 @@ namespace CardGeneratorBackend.Controllers
         {
             var createdCard = await mCardService.CreateCard(dto);
             return Ok(createdCard.GetDTO());
+        }
+
+        [HttpPatch("{id}")]
+        [ProducesResponseType<CardDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateCard(Guid id, [FromBody] CardUpdateDTO dto)
+        {
+            var updatedCard = await mCardService.UpdateCardWithId(id, dto);
+            return Ok(updatedCard.GetDTO());
         }
     }
 }

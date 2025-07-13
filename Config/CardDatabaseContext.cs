@@ -34,6 +34,15 @@ namespace CardGeneratorBackend.Config
                     variant => variant.ToString(),
                     variantStr => Enum.Parse<CardVariant>(variantStr)
                 );
+
+            modelBuilder.Entity<CardType>()
+                .HasData(new CardType() {
+                    Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                    Name = "None",
+                    BackgroundColorHexCode1 = "ffffff",
+                    BackgroundColorHexCode2 = "ffffff",
+                    TextColor = "000000"
+                });
         }
     }
 }

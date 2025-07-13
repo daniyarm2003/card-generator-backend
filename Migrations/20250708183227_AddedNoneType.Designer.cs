@@ -3,6 +3,7 @@ using System;
 using CardGeneratorBackend.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CardGeneratorBackend.Migrations
 {
     [DbContext(typeof(CardDatabaseContext))]
-    partial class CardDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250708183227_AddedNoneType")]
+    partial class AddedNoneType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
