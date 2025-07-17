@@ -22,7 +22,7 @@ namespace CardGeneratorBackend.Services.Impl
                     .ThenInclude(type => type.ImageFile)
                 .Include(card => card.DisplayImage)
                 .Include(card => card.CardImage)
-                .OrderBy(card => card.CreatedAt);
+                .OrderBy(card => card.Number);
         }
 
         public async Task<IEnumerable<Card>> GetAllCards()
