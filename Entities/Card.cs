@@ -12,6 +12,9 @@ namespace CardGeneratorBackend.Entities
         [Column("name")]
         public required string Name { get; set; }
 
+        [Column("number")]
+        public required int Number { get; set; }
+
         [Column("variant")]
         public required CardVariant Variant { get; set; }
 

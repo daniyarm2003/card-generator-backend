@@ -37,7 +37,7 @@ namespace CardGeneratorBackend.Config
 
             modelBuilder.Entity<CardType>()
                 .HasData(new CardType() {
-                    Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                    Id = new Guid(CardType.NONE_TYPE_UUID),
                     Name = "None",
                     BackgroundColorHexCode1 = "ffffff",
                     BackgroundColorHexCode2 = "ffffff",

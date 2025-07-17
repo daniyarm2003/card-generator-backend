@@ -1,15 +1,19 @@
-﻿using CardGeneratorBackend.Config;
+﻿using CardGeneratorBackend.CardGeneration;
+using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using SkiaSharp;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService) : ICardService
+    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory) : ICardService
     {
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ICardTypeService mCardTypeService = cardTypeService;
+        private readonly ITrackedFileService mTrackedFileService = trackedFileService;
+        private readonly ICardImageGeneratorFactory mCardImageGeneratorFactory = cardImageGeneratorFactory;
 
         private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
         {
@@ -47,6 +51,7 @@ namespace CardGeneratorBackend.Services.Impl
             var newCard = new Card
             {
                 Name = dto.Name,
+                Number = dto.Number,
                 Variant = dto.Variant,
                 Level = dto.Level,
                 Attack = dto.Attack,
@@ -65,6 +70,7 @@ namespace CardGeneratorBackend.Services.Impl
         public async Task<Card> UpdateCardWithId(Guid id, CardUpdateDTO dto)
         {
             var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+                .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
             if(dto.TypeId != null)
@@ -76,6 +82,11 @@ namespace CardGeneratorBackend.Services.Impl
             if(dto.Name != null)
             {
                 cardToUpdate.Name = dto.Name;
+            }
+
+            if(dto.Number != null)
+            {
+                cardToUpdate.Number = (int)dto.Number;
             }
 
             if(dto.Quote != null)
@@ -110,6 +121,63 @@ namespace CardGeneratorBackend.Services.Impl
             await mDatabaseContext.SaveChangesAsync();
 
             return updatedCardResult.Entity;
+        }
+
+        public async Task<Card> UpdateCardDisplayImage(Guid id, string filename, byte[] data)
+        {
+            var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+                .Where(card => card.Id == id)
+                .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
+
+            cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile() {
+                Path = filename,
+                StorageLocation = Enums.FileStorageLocation.Disk
+            }, data);
+
+            var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
+            var savedCard = savedCardResult.Entity;
+
+            await mDatabaseContext.SaveChangesAsync();
+
+            return savedCard;
+        }
+
+        public async Task<Card> GenerateAndUpdateCardImage(Guid id, string filename)
+        {
+            var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+                .Where(card => card.Id == id)
+                .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
+
+            var cardDTO = cardToUpdate.GetDTO();
+            var cardBitmap = new SKBitmap(500, 750);
+
+            using var cardCanvas = new SKCanvas(cardBitmap);
+            cardCanvas.Clear(SKColors.Transparent);
+
+            var imageGenerator = mCardImageGeneratorFactory.GetCardImageGenerator(cardDTO);
+            await imageGenerator.GenerateCardImage(cardDTO, cardCanvas, cardBitmap.Width, cardBitmap.Height);
+
+            using var cardImage = SKImage.FromBitmap(cardBitmap);
+            using var cardImageData = cardImage.Encode(SKEncodedImageFormat.Png, 100);
+
+            var imageStream = new MemoryStream();
+            cardImageData.SaveTo(imageStream);
+
+            imageStream.Position = 0;
+            byte[] imageData = imageStream.ToArray();
+
+            cardToUpdate.CardImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.CardImage?.Id, new TrackedFile
+            {
+                Path = filename,
+                StorageLocation = Enums.FileStorageLocation.Disk
+            }, imageData);
+
+            var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
+            var savedCard = savedCardResult.Entity;
+
+            await mDatabaseContext.SaveChangesAsync();
+
+            return savedCard;
         }
     }
 }

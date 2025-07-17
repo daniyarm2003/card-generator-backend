@@ -5,6 +5,8 @@ namespace CardGeneratorBackend.Entities
     [Table("card_types")]
     public class CardType
     {
+        public const string NONE_TYPE_UUID = "00000000-0000-0000-0000-000000000001";
+
         [Column("id")]
         public Guid Id { get; set; } = Guid.NewGuid();
 

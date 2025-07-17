@@ -10,6 +10,9 @@ namespace CardGeneratorBackend.DTO
         [Required, StringLength(64)]
         public string Name { get; init; }
 
+        [Required, Range(1, int.MaxValue)]
+        public int Number { get; init; }
+
         [Required]
         public CardVariant Variant { get; init; }
 
@@ -31,9 +34,10 @@ namespace CardGeneratorBackend.DTO
         public Guid TypeId { get; init; }
 
         [JsonConstructor]
-        public CardCreationDTO(string name, CardVariant variant, int? level, int? attack, int? health, string? quote, string? effect, Guid typeId)
+        public CardCreationDTO(string name, int number, CardVariant variant, int? level, int? attack, int? health, string? quote, string? effect, Guid typeId)
         {
             Name = name;
+            Number = number;
             Variant = variant;
             Level = level;
             Attack = attack;
