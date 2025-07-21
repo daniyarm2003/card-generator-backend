@@ -41,12 +41,21 @@ builder.Services.AddScoped<ICardImageGeneratorFactory, DefaultCardImageGenerator
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-var frontendUrl = builder.Configuration["FrontendURL"] ?? throw new ArgumentException("Frontend URL is not set");
+// var frontendUrl = builder.Configuration["FrontendURL"] ?? throw new ArgumentException("Frontend URL is not set");
+
+var frontendUrlSection = builder.Configuration.GetSection("FrontendURLs");
+
+if(!frontendUrlSection.Exists())
+{
+    throw new ArgumentException("Frontend URL is not set");
+}
+
+var frontendUrls = frontendUrlSection.GetChildren().Where(url => url.Value is not null).Select(url => url.Value!);
 
 builder.Services.AddCors(cors =>
 {
     cors.AddDefaultPolicy(policy => policy
-        .WithOrigins(frontendUrl)
+        .WithOrigins([.. frontendUrls])
         .AllowAnyMethod()
         .AllowAnyHeader());
 });
@@ -65,8 +74,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
+// app.UseHttpsRedirection();
+// app.UseAuthorization();
 app.MapControllers();
 
 app.UseCors();
