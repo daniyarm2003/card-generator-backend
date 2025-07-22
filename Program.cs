@@ -11,6 +11,10 @@ using SkiaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine($"The current environment is: {builder.Environment.EnvironmentName}");
+
+builder.Configuration.AddEnvironmentVariables();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
