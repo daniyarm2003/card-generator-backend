@@ -1,0 +1,31 @@
+services:
+  app:
+    image: card-generator-backend-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    container_name: card_generator_be_dev
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: dotnet run
+    profiles:
+      - dev
+    env_file: devsecrets.env
+  migration:
+    image: card-generator-backend-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    container_name: card_generator_be_dev_migration
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: dotnet dotnet-ef database update
+    profiles:
+      - dev_migration
+    env_file: devsecrets.env
