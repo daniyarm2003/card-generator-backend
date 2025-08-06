@@ -25,7 +25,7 @@ services:
     container_name: card_generator_be_dev_migration
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: dotnet dotnet-ef database update
+    command: bash -c "dotnet tool restore && dotnet dotnet-ef database update"
     profiles:
       - dev_migration
     env_file: devsecrets.env
