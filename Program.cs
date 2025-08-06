@@ -1,13 +1,10 @@
 using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.Config;
-using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Environment;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
 using CardGeneratorBackend.Services;
 using CardGeneratorBackend.Services.Impl;
-using Microsoft.EntityFrameworkCore;
-using SkiaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,24 +42,35 @@ builder.Services.AddScoped<ICardImageGeneratorFactory, DefaultCardImageGenerator
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// var frontendUrl = builder.Configuration["FrontendURL"] ?? throw new ArgumentException("Frontend URL is not set");
-
-var frontendUrlSection = builder.Configuration.GetSection("FrontendURLs");
-
-if(!frontendUrlSection.Exists())
+if (builder.Environment.IsDevelopment())
 {
-    throw new ArgumentException("Frontend URL is not set");
+    builder.Services.AddCors(cors =>
+    {
+        cors.AddDefaultPolicy(policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+    });
 }
-
-var frontendUrls = frontendUrlSection.GetChildren().Where(url => url.Value is not null).Select(url => url.Value!);
-
-builder.Services.AddCors(cors =>
+else
 {
-    cors.AddDefaultPolicy(policy => policy
-        .WithOrigins([.. frontendUrls])
-        .AllowAnyMethod()
-        .AllowAnyHeader());
-});
+    var frontendUrlSection = builder.Configuration.GetSection("FrontendURLs");
+
+    if (!frontendUrlSection.Exists())
+    {
+        throw new ArgumentException("Frontend URL is not set");
+    }
+
+    var frontendUrls = frontendUrlSection.GetChildren().Where(url => url.Value is not null).Select(url => url.Value!);
+
+    builder.Services.AddCors(cors =>
+    {
+        cors.AddDefaultPolicy(policy => policy
+            .WithOrigins([.. frontendUrls])
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+    });
+}
 
 var app = builder.Build();
 
