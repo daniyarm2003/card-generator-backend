@@ -9,6 +9,11 @@ namespace CardGeneratorBackend.CardGeneration
 
         public ICardImageGenerator GetCardImageGenerator(CardDTO card)
         {
+            if(card.Variant == Enums.CardVariant.NEBULA)
+            {
+                return new NebulaCardImageGenerator(mTrackedFileService);
+            }
+            
             return new BaseCardImageGenerator(mTrackedFileService);
         }
     }

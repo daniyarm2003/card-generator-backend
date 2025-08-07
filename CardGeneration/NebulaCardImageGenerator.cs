@@ -1,13 +1,17 @@
-﻿using CardGeneratorBackend.DTO;
+using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Services;
+
 using SkiaSharp;
-using System.Drawing;
 
 namespace CardGeneratorBackend.CardGeneration
 {
-    public class BaseCardImageGenerator(ITrackedFileService trackedFileService) : ICardImageGenerator
+    class NebulaCardImageGenerator(ITrackedFileService trackedFileService) : ICardImageGenerator
     {
+        private static readonly SKColor NEBULA_BACKGROUND_COLOR_INNER = new SKColor(0xEF, 0x00, 0xEF);
+        private static readonly SKColor NEBULA_BACKGROUND_COLOR_OUTER = new SKColor(0xC5, 0x00, 0xC5);
+        private static readonly SKColor NEBULA_TEXT_COLOR = new SKColor(0xFF, 0xFF, 0xFF);
+
         private readonly ITrackedFileService mTrackedFileService = trackedFileService;
 
         public async Task<SKCanvas> GenerateCardImage(CardDTO card, SKCanvas cardCanvas, int width, int height)
@@ -16,25 +20,10 @@ namespace CardGeneratorBackend.CardGeneration
             ArgumentNullException.ThrowIfNullOrEmpty(card.Name);
             ArgumentNullException.ThrowIfNull(card.Number);
 
-            if (!SKColor.TryParse($"#{card.Type.BackgroundColorHexCode1}", out SKColor bgCol1))
-            {
-                bgCol1 = SKColors.White;
-            }
-
-            if (!SKColor.TryParse($"#{card.Type.BackgroundColorHexCode2}", out SKColor bgCol2))
-            {
-                bgCol2 = SKColors.White;
-            }
-
-            if (!SKColor.TryParse($"#{card.Type.TextColor}", out SKColor textCol))
-            {
-                textCol = SKColors.Black;
-            }
-
             using var radialShader = SKShader.CreateRadialGradient(
                 new SKPoint(width / 2, height / 2),
                 width * 0.75f,
-                [bgCol1, bgCol2],
+                [NEBULA_BACKGROUND_COLOR_INNER, NEBULA_BACKGROUND_COLOR_OUTER],
                 [0.0f, 1.0f],
                 SKShaderTileMode.Clamp
             );
@@ -48,7 +37,7 @@ namespace CardGeneratorBackend.CardGeneration
             using var outlinePaint = new SKPaint
             {
                 StrokeWidth = 2.0f,
-                Color = textCol,
+                Color = NEBULA_TEXT_COLOR,
                 Style = SKPaintStyle.Stroke,
                 IsAntialias = true
             };
@@ -66,10 +55,9 @@ namespace CardGeneratorBackend.CardGeneration
 
             using var textPaint = new SKPaint
             {
-                Color = textCol,
+                Color = NEBULA_TEXT_COLOR,
                 IsAntialias = true
             };
-
             
             float maxNameWidth = width * 0.5f;
 
@@ -83,21 +71,6 @@ namespace CardGeneratorBackend.CardGeneration
             var nameLocation = new SKPoint(width / 2, topTextY);
 
             cardCanvas.DrawText(card.Name, nameLocation, SKTextAlign.Center, nameFont, textPaint);
-
-            if(card.Level is not null)
-            {
-                string cardLevelText = $"Level {card.Level}";
-
-                using var levelFont = new SKFont
-                {
-                    Typeface = SKTypeface.FromFile("Assets/Changa/Changa-VariableFont_wght.ttf"),
-                    Size = 25
-                };
-
-                var levelLocation = new SKPoint(15, topTextY);
-
-                cardCanvas.DrawText(cardLevelText, levelLocation, SKTextAlign.Left, levelFont, textPaint);
-            }
 
             if(card.Type.Id != new Guid(CardType.NONE_TYPE_UUID))
             {
@@ -194,32 +167,10 @@ namespace CardGeneratorBackend.CardGeneration
                 Size = 25
             };
 
-            using var statFont = new SKFont
-            {
-                Typeface = SKTypeface.FromFile("Assets/Press_Start_2P/PressStart2P-Regular.ttf"),
-                Size = 20
-            };
-
             float bottomTextBaselineY = height - 15.0f;
 
             var numberLocation = new SKPoint(width / 2, bottomTextBaselineY);
             cardCanvas.DrawText(card.Number.ToString(), numberLocation, SKTextAlign.Center, numberFont, textPaint);
-
-            if(card.Health is not null)
-            {
-                string hpText = $"HP {card.Health}";
-                var hpLocation = new SKPoint(15.0f, bottomTextBaselineY);
-
-                cardCanvas.DrawText(hpText, hpLocation, SKTextAlign.Left, statFont, textPaint);
-            }
-
-            if (card.Attack is not null)
-            {
-                string attackText = $"ATK {card.Attack}";
-                var attackLocation = new SKPoint(width - 15.0f, bottomTextBaselineY);
-
-                cardCanvas.DrawText(attackText, attackLocation, SKTextAlign.Right, statFont, textPaint);
-            }
 
             return cardCanvas;
         }
