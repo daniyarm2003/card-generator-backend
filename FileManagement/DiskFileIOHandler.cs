@@ -23,6 +23,11 @@ namespace CardGeneratorBackend.FileManagement
             return File.ReadAllBytesAsync(GetRelativePath(file));
         }
 
+        public Task<Stream> GetReadStream(TrackedFile file)
+        {
+            return Task.FromResult<Stream>(File.OpenRead(GetRelativePath(file)));
+        }
+
         public Task WriteAllData(TrackedFile file, byte[] data)
         {
             return File.WriteAllBytesAsync(GetRelativePath(file), data);

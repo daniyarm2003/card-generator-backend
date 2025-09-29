@@ -6,6 +6,8 @@ namespace CardGeneratorBackend.FileManagement
     {
         public Task<byte[]> ReadAllData(TrackedFile file);
 
+        public Task<Stream> GetReadStream(TrackedFile file);
+
         public Task WriteAllData(TrackedFile file, byte[] data);
 
         public Task DeleteFile(TrackedFile file);

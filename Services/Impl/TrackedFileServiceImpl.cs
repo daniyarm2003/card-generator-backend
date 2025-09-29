@@ -41,6 +41,12 @@ namespace CardGeneratorBackend.Services.Impl
             return ioHandler.ReadAllData(file);
         }
 
+        public Task<Stream> GetFileReadStream(TrackedFile file)
+        {
+            var ioHandler = FileIOHandlerFactory.GetIOHandler(file);
+            return ioHandler.GetReadStream(file);
+        }
+
         public string GetFileDownloadName(TrackedFile file)
         {
             var fileExtension = Path.GetExtension(file.Path);
@@ -57,11 +63,21 @@ namespace CardGeneratorBackend.Services.Impl
             return new(GetFileDownloadName(trackedFile), contents);
         }
 
+        public async Task<FileStreamRetrievalInfo> GetFileReadStreamWithId(Guid id)
+        {
+            var trackedFile = await DatabaseContext.TrackedFiles.Where(file => file.Id == id).FirstOrDefaultAsync() 
+                ?? throw new EntityNotFoundException(typeof(TrackedFile), id);
+
+            var stream = await GetFileReadStream(trackedFile);
+
+            return new(GetFileDownloadName(trackedFile), stream);
+        }
+
         public async Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data)
         {
-            if(fileId is null)
+            if (fileId is null)
             {
-                if(newFile is null)
+                if (newFile is null)
                 {
                     throw new ArgumentException("Existing file ID and file creation info cannot both be null");
                 }

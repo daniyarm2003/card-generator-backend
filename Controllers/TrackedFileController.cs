@@ -19,12 +19,12 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ReadTrackedFile(Guid id)
         {
-            var fileDownloadInfo = await mFileService.ReadFileWithId(id);
-            var mimeType = MimeTypesMap.GetMimeType(fileDownloadInfo.Name) ?? "application/octet-stream";
+            var fileStreamRetrievalInfo = await mFileService.GetFileReadStreamWithId(id);
+            var mimeType = MimeTypesMap.GetMimeType(fileStreamRetrievalInfo.Name) ?? "application/octet-stream";
 
             Response.Headers.CacheControl = "no-store";
 
-            return new FileContentResult(fileDownloadInfo.Contents, mimeType);
+            return new FileStreamResult(fileStreamRetrievalInfo.FileStream, mimeType);
         }
     }
 }
