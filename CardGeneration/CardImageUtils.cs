@@ -10,6 +10,15 @@ namespace CardGeneratorBackend.CardGeneration
             return fontMetrics.Descent - fontMetrics.Ascent + fontMetrics.Leading;
         }
 
+        public static SKFont CreateBasicFontFromFile(string fontPath, float fontSize)
+        {
+            return new SKFont
+            {
+                Typeface = SKTypeface.FromFile(fontPath),
+                Size = fontSize
+            };
+        }
+
         public static void WriteMultiLineCenteredText(this SKCanvas canvas, string text, SKFont font, SKPaint paint, float centerX, float maxWidth, ref float y)
         {
             var textLines = text.Split('\n');
