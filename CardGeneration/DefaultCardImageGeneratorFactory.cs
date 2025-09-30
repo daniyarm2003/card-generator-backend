@@ -14,7 +14,7 @@ namespace CardGeneratorBackend.CardGeneration
                 return new NebulaCardImageGenerator(mTrackedFileService);
             }
             
-            return new BaseCardImageGenerator(mTrackedFileService);
+            return new RegularCardImageGenerator(mTrackedFileService);
         }
     }
 }

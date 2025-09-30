@@ -8,6 +8,8 @@ services:
       - "8080:8080"
     volumes:
       - .:/app
+      - app_bin:/app/bin
+      - app_obj:/app/obj
     container_name: card_generator_be_dev
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -22,6 +24,8 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - .:/app
+      - app_bin:/app/bin
+      - app_obj:/app/obj
     container_name: card_generator_be_dev_migration
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -29,3 +33,7 @@ services:
     profiles:
       - dev_migration
     env_file: devsecrets.env
+
+volumes:
+  app_bin:
+  app_obj:

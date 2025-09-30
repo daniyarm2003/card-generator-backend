@@ -1,24 +1,35 @@
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Services;
-
 using SkiaSharp;
+using System.Drawing;
 
 namespace CardGeneratorBackend.CardGeneration
 {
-    class NebulaCardImageGenerator(ITrackedFileService trackedFileService) : BaseCardImageGenerator(trackedFileService)
+    public class RegularCardImageGenerator(ITrackedFileService trackedFileService) : BaseCardImageGenerator(trackedFileService)
     {
-        private static readonly SKColor NEBULA_BACKGROUND_COLOR_INNER = new(0xEF, 0x00, 0xEF);
-        private static readonly SKColor NEBULA_BACKGROUND_COLOR_OUTER = new(0xC5, 0x00, 0xC5);
-        private static readonly SKColor NEBULA_TEXT_COLOR = new(0xFF, 0xFF, 0xFF);
-        
         public override async Task<SKCanvas> GenerateCardImage(CardDTO card, SKCanvas cardCanvas, int width, int height)
         {
             ArgumentNullException.ThrowIfNull(card);
             ArgumentException.ThrowIfNullOrEmpty(card.Name);
             ArgumentNullException.ThrowIfNull(card.Number);
 
-            using var radialShader = GetBackgroundGradientShader(NEBULA_BACKGROUND_COLOR_INNER, NEBULA_BACKGROUND_COLOR_OUTER, width, height);
+            if (!SKColor.TryParse($"#{card.Type.BackgroundColorHexCode1}", out SKColor bgCol1))
+            {
+                bgCol1 = SKColors.White;
+            }
+
+            if (!SKColor.TryParse($"#{card.Type.BackgroundColorHexCode2}", out SKColor bgCol2))
+            {
+                bgCol2 = SKColors.White;
+            }
+
+            if (!SKColor.TryParse($"#{card.Type.TextColor}", out SKColor textCol))
+            {
+                textCol = SKColors.Black;
+            }
+
+            using var radialShader = GetBackgroundGradientShader(bgCol1, bgCol2, width, height);
 
             using var bgPaint = new SKPaint
             {
@@ -29,7 +40,7 @@ namespace CardGeneratorBackend.CardGeneration
             using var outlinePaint = new SKPaint
             {
                 StrokeWidth = 2.0f,
-                Color = NEBULA_TEXT_COLOR,
+                Color = textCol,
                 Style = SKPaintStyle.Stroke,
                 IsAntialias = true
             };
@@ -44,11 +55,12 @@ namespace CardGeneratorBackend.CardGeneration
 
             using var textPaint = new SKPaint
             {
-                Color = NEBULA_TEXT_COLOR,
+                Color = textCol,
                 IsAntialias = true
             };
 
             DrawCardName(card, cardCanvas, textPaint, width);
+            DrawCardLevel(card, cardCanvas, textPaint);
 
             await DrawCardTypeInfo(card, cardCanvas, textPaint, width);
             await DrawCardDisplayImage(card, cardCanvas, outlinePaint, width, height);
@@ -60,6 +72,7 @@ namespace CardGeneratorBackend.CardGeneration
             DrawCardEffect(card, cardCanvas, effectOutlinePaint, textPaint, width, height, ref textLineOffsetY);
 
             DrawCardNumber(card, cardCanvas, textPaint, width, height);
+            DrawCardBaseStats(card, cardCanvas, textPaint, width, height);
 
             return cardCanvas;
         }
