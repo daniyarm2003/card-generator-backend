@@ -22,14 +22,14 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllCards(int? pageNum, int? pageSize)
         {
-            if(pageSize is null)
+            if (pageSize is null)
             {
                 var cards = await mCardService.GetAllCards();
                 return Ok(cards.Select(card => card.GetDTO()));
             }
             else
             {
-                pageNum = pageNum ?? 1;
+                pageNum ??= 1;
 
                 var data = await mCardService.GetCardsPaginated((int)pageNum, (int)pageSize);
                 return Ok(data.Select(card => card.GetDTO()));
@@ -99,6 +99,18 @@ namespace CardGeneratorBackend.Controllers
         {
             var updatedCard = await mCardService.GenerateAndUpdateCardImage(id, $"CardImage-{Guid.NewGuid()}.png");
             return Ok(updatedCard.GetDTO());
+        }
+
+        [HttpDelete("{id}")]
+        [ProducesResponseType<CardDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteCard(Guid id)
+        {
+            var cardToDelete = await mCardService.GetCardById(id);
+            await mCardService.DeleteCard(cardToDelete);
+
+            return Ok(cardToDelete);
         }
     }
 }

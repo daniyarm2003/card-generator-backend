@@ -22,7 +22,8 @@ namespace CardGeneratorBackend.Services.Impl
                     .ThenInclude(type => type.ImageFile)
                 .Include(card => card.DisplayImage)
                 .Include(card => card.CardImage)
-                .OrderBy(card => card.Number);
+                .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
+                    .ThenBy(card => card.Number);
         }
 
         public async Task<IEnumerable<Card>> GetAllCards()
@@ -73,45 +74,45 @@ namespace CardGeneratorBackend.Services.Impl
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
-            if(dto.TypeId != null)
+            if (dto.TypeId != null)
             {
                 var newType = await mCardTypeService.GetCardTypeById((Guid)dto.TypeId);
                 cardToUpdate.Type = newType;
             }
 
-            if(dto.Name != null)
+            if (dto.Name != null)
             {
                 cardToUpdate.Name = dto.Name;
             }
 
-            if(dto.Number != null)
+            if (dto.Number != null)
             {
                 cardToUpdate.Number = (int)dto.Number;
             }
 
-            if(dto.Quote != null)
+            if (dto.Quote != null)
             {
                 cardToUpdate.Quote = dto.Quote;
             }
 
-            if(dto.Effect != null)
+            if (dto.Effect != null)
             {
                 cardToUpdate.Effect = dto.Effect;
             }
 
-            if(cardToUpdate.Variant == Enums.CardVariant.REGULAR)
+            if (cardToUpdate.Variant == Enums.CardVariant.REGULAR)
             {
-                if(dto.Attack != null)
+                if (dto.Attack != null)
                 {
                     cardToUpdate.Attack = dto.Attack;
                 }
 
-                if(dto.Health != null)
+                if (dto.Health != null)
                 {
                     cardToUpdate.Health = dto.Health;
                 }
 
-                if(dto.Level != null)
+                if (dto.Level != null)
                 {
                     cardToUpdate.Level = dto.Level;
                 }
@@ -129,7 +130,8 @@ namespace CardGeneratorBackend.Services.Impl
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
-            cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile() {
+            cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile()
+            {
                 Path = filename,
                 StorageLocation = Enums.FileStorageLocation.Disk
             }, data);
@@ -178,6 +180,34 @@ namespace CardGeneratorBackend.Services.Impl
             await mDatabaseContext.SaveChangesAsync();
 
             return savedCard;
+        }
+
+        public async Task DeleteCard(Card card)
+        {
+            var displayImageFile = card.DisplayImage;
+            var cardImageFile = card.CardImage;
+
+            mDatabaseContext.Cards.Remove(card);
+            await mDatabaseContext.SaveChangesAsync();
+
+            if (displayImageFile is not null)
+            {
+                await mTrackedFileService.DeleteFile(displayImageFile);
+            }
+
+            if (cardImageFile is not null)
+            {
+                await mTrackedFileService.DeleteFile(cardImageFile);
+            }
+        }
+
+        public async Task<Card> GetCardById(Guid id)
+        {
+            var card = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+                .Where(card => card.Id == id)
+                .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
+
+            return card;
         }
     }
 }
