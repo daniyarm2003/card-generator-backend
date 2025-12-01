@@ -2,6 +2,7 @@
 {
     public enum FileStorageLocation
     {
-        Disk
+        Disk,
+        GoogleDrive
     }
 }

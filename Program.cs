@@ -3,8 +3,11 @@ using CardGeneratorBackend.Config;
 using CardGeneratorBackend.Environment;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
+using CardGeneratorBackend.GoogleUtils;
 using CardGeneratorBackend.Services;
 using CardGeneratorBackend.Services.Impl;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Drive.v3;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,9 +31,38 @@ builder.Services.Configure<DiskFileStorageParameters>(
 builder.Services.Configure<FileUploadParameters>(
     builder.Configuration.GetSection(FileUploadParameters.ENV_OBJ_KEY));
 
+builder.Services.Configure<GoogleServiceParameters>(
+    builder.Configuration.GetSection(GoogleServiceParameters.ENV_OBJ_KEY));
+
 builder.Services.AddDbContext<CardDatabaseContext>();
 
 builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>();
+
+// Google service account utils setup
+builder.Services.AddSingleton<IGoogleCredentialFactory, DefaultGoogleServiceAccountCredentialFactory>();
+
+builder.Services.AddSingleton(serviceProvider =>
+{
+    var credentialFactory = serviceProvider.GetService<IGoogleCredentialFactory>();
+    ArgumentNullException.ThrowIfNull(credentialFactory);
+
+    var credentialTask = credentialFactory.GetCredentials();
+    credentialTask.Wait();
+
+    return credentialTask.Result;
+});
+
+builder.Services.AddSingleton(serviceProvider =>
+{
+    var credentials = serviceProvider.GetService<GoogleCredential>();
+    ArgumentNullException.ThrowIfNull(credentials);
+
+    return new DriveService(new Google.Apis.Services.BaseClientService.Initializer()
+    {
+        HttpClientInitializer = credentials,
+        ApplicationName = "DFA Card Generator"
+    });
+});
 
 builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
 builder.Services.AddScoped<ICardTypeService, CardTypeServiceImpl>();
