@@ -46,16 +46,33 @@ builder.Services.AddSingleton(serviceProvider =>
     var credentialFactory = serviceProvider.GetService<IGoogleCredentialFactory>();
     ArgumentNullException.ThrowIfNull(credentialFactory);
 
-    var credentialTask = credentialFactory.GetCredentials();
-    credentialTask.Wait();
+    try
+    {
+        var credentialTask = credentialFactory.GetCredentials();
+        credentialTask.Wait();
 
-    return credentialTask.Result;
+        return credentialTask.Result;
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine($"Error while getting Google credentials: {ex.Message}");
+        throw;
+    }
 });
 
 builder.Services.AddSingleton(serviceProvider =>
 {
-    var credentials = serviceProvider.GetService<GoogleCredential>();
-    ArgumentNullException.ThrowIfNull(credentials);
+    GoogleCredential? credentials = null;
+
+    try
+    {
+        credentials = serviceProvider.GetService<GoogleCredential>();
+        ArgumentNullException.ThrowIfNull(credentials);
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine($"Error while getting Google credentials for DriveService: {ex.Message}");
+    }
 
     return new DriveService(new Google.Apis.Services.BaseClientService.Initializer()
     {
