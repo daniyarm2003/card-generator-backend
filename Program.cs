@@ -39,6 +39,9 @@ builder.Services.Configure<FileUploadParameters>(
 builder.Services.Configure<GoogleServiceParameters>(
     builder.Configuration.GetSection(GoogleServiceParameters.ENV_OBJ_KEY));
 
+builder.Services.Configure<AWSParameters>(
+    builder.Configuration.GetSection(AWSParameters.ENV_OBJ_KEY));
+
 builder.Services.AddDbContext<CardDatabaseContext>();
 
 builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>();

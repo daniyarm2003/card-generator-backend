@@ -44,7 +44,7 @@ namespace CardGeneratorBackend.Services.Impl
             type.ImageFile = await mFileService.WriteOrReplaceFileContents(type.ImageFile?.Id, new TrackedFile()
             {
                 Path = fileName,
-                StorageLocation = Enums.FileStorageLocation.Disk
+                StorageLocation = Enums.FileStorageLocation.S3
             }, data);
 
             var savedTypeUpdateData = mDatabaseContext.CardTypes.Update(type);

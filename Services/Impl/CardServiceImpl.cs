@@ -133,7 +133,7 @@ namespace CardGeneratorBackend.Services.Impl
             cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile()
             {
                 Path = filename,
-                StorageLocation = Enums.FileStorageLocation.Disk
+                StorageLocation = Enums.FileStorageLocation.S3
             }, data);
 
             var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
@@ -171,7 +171,7 @@ namespace CardGeneratorBackend.Services.Impl
             cardToUpdate.CardImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.CardImage?.Id, new TrackedFile
             {
                 Path = filename,
-                StorageLocation = Enums.FileStorageLocation.Disk
+                StorageLocation = Enums.FileStorageLocation.S3
             }, imageData);
 
             var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
