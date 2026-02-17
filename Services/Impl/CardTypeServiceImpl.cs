@@ -2,14 +2,16 @@
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
+using CardGeneratorBackend.FileManagement;
 using Microsoft.EntityFrameworkCore;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class CardTypeServiceImpl(CardDatabaseContext dbContext, ITrackedFileService fileService) : ICardTypeService
+    public class CardTypeServiceImpl(CardDatabaseContext dbContext, ITrackedFileService fileService, IDefaultFileMethodRetriever fileMethodRetriever) : ICardTypeService
     {
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ITrackedFileService mFileService = fileService;
+        private readonly IDefaultFileMethodRetriever mFileMethodRetriever = fileMethodRetriever;
 
         private static IQueryable<CardType> GetDefaultCardTypeQuery(IQueryable<CardType> inQuery)
         {
@@ -44,7 +46,7 @@ namespace CardGeneratorBackend.Services.Impl
             type.ImageFile = await mFileService.WriteOrReplaceFileContents(type.ImageFile?.Id, new TrackedFile()
             {
                 Path = fileName,
-                StorageLocation = Enums.FileStorageLocation.S3
+                StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
             }, data);
 
             var savedTypeUpdateData = mDatabaseContext.CardTypes.Update(type);

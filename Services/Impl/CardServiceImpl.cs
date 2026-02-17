@@ -3,17 +3,19 @@ using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
+using CardGeneratorBackend.FileManagement;
 using Microsoft.EntityFrameworkCore;
 using SkiaSharp;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory) : ICardService
+    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory, IDefaultFileMethodRetriever fileMethodRetriever) : ICardService
     {
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ICardTypeService mCardTypeService = cardTypeService;
         private readonly ITrackedFileService mTrackedFileService = trackedFileService;
         private readonly ICardImageGeneratorFactory mCardImageGeneratorFactory = cardImageGeneratorFactory;
+        private readonly IDefaultFileMethodRetriever mFileMethodRetriever = fileMethodRetriever;
 
         private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
         {
@@ -133,7 +135,7 @@ namespace CardGeneratorBackend.Services.Impl
             cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile()
             {
                 Path = filename,
-                StorageLocation = Enums.FileStorageLocation.S3
+                StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
             }, data);
 
             var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
@@ -171,7 +173,7 @@ namespace CardGeneratorBackend.Services.Impl
             cardToUpdate.CardImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.CardImage?.Id, new TrackedFile
             {
                 Path = filename,
-                StorageLocation = Enums.FileStorageLocation.S3
+                StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
             }, imageData);
 
             var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);

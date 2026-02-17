@@ -44,6 +44,7 @@ builder.Services.Configure<AWSParameters>(
 
 builder.Services.AddDbContext<CardDatabaseContext>();
 
+builder.Services.AddSingleton<IDefaultFileMethodRetriever, DefaultFileMethodRetrieverImpl>();
 builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>();
 
 // Google service account utils setup
