@@ -8,6 +8,11 @@ using CardGeneratorBackend.Services;
 using CardGeneratorBackend.Services.Impl;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
+using Amazon.S3;
+using Amazon.Runtime;
+using CardGeneratorBackend.AWSUtils;
+using Amazon;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +46,9 @@ builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>()
 // Google service account utils setup
 builder.Services.AddSingleton<IGoogleCredentialFactory, DefaultGoogleServiceAccountCredentialFactory>();
 
+// AWS utils setup
+builder.Services.AddSingleton<IAWSCredentialFactory, DefaultAWSCredentialFactory>();
+
 builder.Services.AddSingleton(serviceProvider =>
 {
     var credentialFactory = serviceProvider.GetService<IGoogleCredentialFactory>();
@@ -69,9 +77,9 @@ builder.Services.AddSingleton(serviceProvider =>
         credentials = serviceProvider.GetService<GoogleCredential>();
         ArgumentNullException.ThrowIfNull(credentials);
     }
-    catch(Exception ex)
+    catch(Exception)
     {
-        Console.WriteLine($"Error while getting Google credentials for DriveService: {ex.Message}");
+        Console.WriteLine("Error while getting Google credentials for DriveService initialization. Check previous logs for details. DriveService will be initialized with null credentials, which will likely cause errors when used.");
     }
 
     return new DriveService(new Google.Apis.Services.BaseClientService.Initializer()
@@ -79,6 +87,19 @@ builder.Services.AddSingleton(serviceProvider =>
         HttpClientInitializer = credentials,
         ApplicationName = "DFA Card Generator"
     });
+});
+
+builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+{
+    var awsCredentialFactory = serviceProvider.GetService<IAWSCredentialFactory>();
+    var awsOptions = serviceProvider.GetService<IOptions<AWSParameters>>();
+
+    ArgumentNullException.ThrowIfNull(awsCredentialFactory);
+
+    AWSCredentials? awsCredentials = awsCredentialFactory.GetCredentials();
+    RegionEndpoint awsRegion = RegionEndpoint.GetBySystemName(awsOptions?.Value.Region);
+
+    return awsCredentials != null ? new AmazonS3Client(awsCredentials, awsRegion) : new AmazonS3Client(awsRegion);
 });
 
 builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
