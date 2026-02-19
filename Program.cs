@@ -13,6 +13,7 @@ using Amazon.Runtime;
 using CardGeneratorBackend.AWSUtils;
 using Amazon;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -148,6 +149,14 @@ else
 
 var app = builder.Build();
 
+// Apply database migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CardDatabaseContext>();
+    db.Database.Migrate();
+
+    Console.WriteLine("Database migrations applied successfully");
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
