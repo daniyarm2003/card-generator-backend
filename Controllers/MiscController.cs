@@ -15,11 +15,5 @@ namespace CardGeneratorBackend.Controllers
                 timestamp = DateTime.UtcNow
             });
         }
-
-        [HttpGet("debug-string")]
-        public IActionResult DebugString()
-        {
-            return Ok(new { debug = "Debug 2" });
-        }
     }
 }
