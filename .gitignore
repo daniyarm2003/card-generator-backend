@@ -418,5 +418,5 @@ FodyWeavers.xsd
 
 LocalFiles
 
-devsecrets.env
+*.env
 card-generator-service-account-credentials.json
