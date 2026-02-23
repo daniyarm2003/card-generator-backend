@@ -19,7 +19,7 @@ namespace CardGeneratorBackend.Controllers
         [HttpGet("debug-string")]
         public IActionResult DebugString()
         {
-            return Ok(new { debug = "Debug 1" });
+            return Ok(new { debug = "Debug 2" });
         }
     }
 }
