@@ -5,26 +5,24 @@ WORKDIR /app
 COPY . .
 
 RUN dotnet restore
-RUN dotnet publish ./CardGeneratorBackend.csproj -c Release -r linux-x64 --self-contained false -o ./out
+RUN dotnet publish ./CardGeneratorBackend.csproj -c Release -o ./out
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM public.ecr.aws/lambda/dotnet:8
 
-WORKDIR /app
+WORKDIR /var/task
 
 # Install native dependencies needed by SkiaSharp
-RUN apt-get update && apt-get install -y \
-    libfontconfig1 \
-    libfreetype6 \
-    libglib2.0-0 \
-    libx11-6 \
-    libxext6 \
-    libxrender1 \
-    libxcb1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN dnf install -y \
+    fontconfig \
+    freetype \
+    glib2 \
+    libX11 \
+    libXext \
+    libXrender \
+    libxcb \
+    && dnf clean all
 
 COPY --from=build /app/out .
 COPY Assets ./Assets
 
-EXPOSE 8080
-
-CMD ["dotnet", "CardGeneratorBackend.dll"]
+CMD ["CardGeneratorBackend"]

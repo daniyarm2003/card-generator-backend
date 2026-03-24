@@ -14,12 +14,61 @@ using CardGeneratorBackend.AWSUtils;
 using Amazon;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using Amazon.SimpleSystemsManagement;
+using Amazon.SimpleSystemsManagement.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Console.WriteLine($"The current environment is: {builder.Environment.EnvironmentName}");
 
 builder.Configuration.AddEnvironmentVariables();
+
+var awsRegionName = builder.Configuration.GetValue<string>("AWS:Region");
+var awsRegion = RegionEndpoint.GetBySystemName(awsRegionName);
+
+Console.WriteLine($"AWS Region from configuration: {awsRegion.DisplayName}");
+
+// In production, retrieve environment variables from AWS SSM Parameter Store
+if(builder.Environment.IsProduction())
+{
+    var ssmClient = new AmazonSimpleSystemsManagementClient(awsRegion);
+    var parameterName = builder.Configuration.GetValue<string>("AWS:SsmEnvParameterName");
+
+    try
+    {
+        var ssmRequest = new GetParameterRequest
+        {
+            Name = parameterName,
+            WithDecryption = true
+        };
+
+        var ssmResponse = ssmClient.GetParameterAsync(ssmRequest).Result;
+        var parameterValue = ssmResponse.Parameter.Value;
+
+        // Base64 is used as a little hack to store multiple environment variables in a single SSM parameter, since SSM parameters are just key-value pairs
+        byte[] base64DecodedValueBytes = Convert.FromBase64String(parameterValue);
+        string envString = System.Text.Encoding.UTF8.GetString(base64DecodedValueBytes);
+
+        string[] envLines = envString.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var line in envLines)
+        {
+            var separatorIndex = line.IndexOf('=');
+            if (separatorIndex > 0)
+            {
+                var key = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim();
+
+                Environment.SetEnvironmentVariable(key, value);
+            }
+        }
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine($"Error while retrieving environment variables from SSM Parameter Store: {ex.Message}");
+        throw;
+    }
+}
 
 // Add services to the container.
 
@@ -146,6 +195,8 @@ else
             .AllowAnyHeader());
     });
 }
+
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
 var app = builder.Build();
 
