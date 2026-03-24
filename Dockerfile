@@ -25,4 +25,6 @@ RUN dnf install -y \
 COPY --from=build /app/out .
 COPY Assets ./Assets
 
+ENV ASPNETCORE_ENVIRONMENT=Production
+
 CMD ["CardGeneratorBackend"]
