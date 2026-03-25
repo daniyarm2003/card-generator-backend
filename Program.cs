@@ -21,8 +21,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 Console.WriteLine($"The current environment is: {builder.Environment.EnvironmentName}");
 
-builder.Configuration.AddEnvironmentVariables();
-
 var awsRegionName = builder.Configuration.GetValue<string>("AWS:Region");
 var awsRegion = RegionEndpoint.GetBySystemName(awsRegionName);
 
@@ -69,6 +67,9 @@ if(builder.Environment.IsProduction())
         throw;
     }
 }
+
+// Some variables were added to environment variables in the previous step, but we need to reload the configuration to make them available to the application
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 
@@ -218,6 +219,10 @@ if (app.Environment.IsDevelopment())
     });
 
     app.UseSwaggerUI();
+}
+else
+{
+    app.UsePathBase("/default/dfa-card-generator-serverless");
 }
 
 // app.UseHttpsRedirection();

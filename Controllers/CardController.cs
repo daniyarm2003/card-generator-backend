@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
-    [Route("/api/cards")]
+    [Route("api/cards")]
     public class CardController(ICardService cardService, IFileUploadValidationService fileUploadValidationService) : ControllerBase
     {
         private readonly ICardService mCardService = cardService;

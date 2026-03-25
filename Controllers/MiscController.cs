@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
-    [Route("/api")]
+    [Route("api")]
     public class MiscController : ControllerBase
     {
         [HttpGet("hc")]
