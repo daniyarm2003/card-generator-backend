@@ -420,3 +420,5 @@ LocalFiles
 
 *.env
 card-generator-service-account-credentials.json
+
+build.zip

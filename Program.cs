@@ -74,6 +74,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -197,8 +198,6 @@ else
     });
 }
 
-builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
-
 var app = builder.Build();
 
 // Apply database migrations on startup
@@ -222,11 +221,10 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UsePathBase("/default/dfa-card-generator-serverless");
+    app.UseHttpsRedirection();
+    app.UseAuthorization();
 }
 
-// app.UseHttpsRedirection();
-// app.UseAuthorization();
 app.MapControllers();
 
 app.UseCors();

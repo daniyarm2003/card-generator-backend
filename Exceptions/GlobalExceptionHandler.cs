@@ -16,9 +16,10 @@ namespace CardGeneratorBackend.Exceptions
                 _ => StatusCodes.Status500InternalServerError
             };
 
-            var messageJson = new Dictionary<string, string>
+            var messageJson = new Dictionary<string, object>
             {
-                { "message", message }
+                { "message", message },
+                { "statusCode", statusCode }
             };
 
             if(statusCode >= 500)
