@@ -14,7 +14,7 @@ namespace CardGeneratorBackend.Services.Impl
         private IDefaultFileMethodRetriever DefaultFileMethodRetriever { get; } = defaultFileMethodRetriever;
 
 
-        public async Task<TrackedFile> CreateAndWriteFile(TrackedFile file, byte[] data)
+        public async Task<TrackedFile> CreateAndWriteFile(TrackedFile file, Stream data)
         {
             var savedFileEntry = await DatabaseContext.TrackedFiles.AddAsync(file) 
                 ?? throw new EntityNotSavedException(file, $"File {file.Path} was not saved to database");
@@ -73,27 +73,6 @@ namespace CardGeneratorBackend.Services.Impl
             var stream = await GetFileReadStream(trackedFile);
 
             return new(GetFileDownloadName(trackedFile), stream);
-        }
-
-        public async Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data)
-        {
-            if (fileId is null)
-            {
-                if (newFile is null)
-                {
-                    throw new ArgumentException("Existing file ID and file creation info cannot both be null");
-                }
-
-                return await CreateAndWriteFile(newFile, data);
-            }
-
-            var trackedFile = await DatabaseContext.TrackedFiles.Where(file => file.Id == fileId).FirstOrDefaultAsync()
-                ?? throw new EntityNotFoundException(typeof(TrackedFile), fileId);
-
-            var ioHandler = FileIOHandlerFactory.GetIOHandler(trackedFile);
-
-            await ioHandler.WriteAllData(trackedFile, data);
-            return trackedFile;
         }
 
         public FileStorageLocation GetDefaultStorageLocation()

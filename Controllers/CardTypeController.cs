@@ -12,10 +12,9 @@ namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
     [Route("api/types")]
-    public class CardTypeController(ICardTypeService cardTypeService, IFileUploadValidationService fileUploadValidationService, CardTypeDTOMapper cardTypeDTOMapper) : ControllerBase
+    public class CardTypeController(ICardTypeService cardTypeService, CardTypeDTOMapper cardTypeDTOMapper) : ControllerBase
     {
         private readonly ICardTypeService mCardTypeService = cardTypeService;
-        private readonly IFileUploadValidationService mFileUploadValidationService = fileUploadValidationService;
         private readonly CardTypeDTOMapper mCardTypeDTOMapper = cardTypeDTOMapper;
 
         [HttpGet]

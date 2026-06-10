@@ -27,7 +27,7 @@ namespace CardGeneratorBackend.Controllers
             if (pageSize is null)
             {
                 var cards = await mCardService.GetAllCards();
-                return Ok(cards.Select(card => mCardDTOMapper.ToDTO(card)));
+                return Ok(cards.Select(mCardDTOMapper.ToDTO));
             }
             else
             {
@@ -59,47 +59,25 @@ namespace CardGeneratorBackend.Controllers
             return Ok(mCardDTOMapper.ToDTO(updatedCard));
         }
 
-        [HttpPut("{id}/image")]
-        [ProducesResponseType<CardDTO>(StatusCodes.Status200OK)]
+        [HttpPost("{id}/display-image/upload-url")]
+        [ProducesResponseType<UploadURLResponseDTO>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateCardDisplayImage(Guid id, IFormFile imageFile)
+        public async Task<IActionResult> CreateCardDisplayImageUploadURL(Guid id, [FromBody] UploadURLRequestDTO uploadURLRequest)
         {
-            var validationResult = await mFileUploadValidationService.ValidateFileUpload(this, imageFile);
-
-            if (validationResult is not null)
-            {
-                return validationResult;
-            }
-
-            var fileName = imageFile.FileName;
-            var mimeType = MimeTypesMap.GetMimeType(fileName);
-
-            if (mimeType is null || !mimeType.StartsWith("image"))
-            {
-                return BadRequest("Uploaded file is not an image");
-            }
-
-            using var stream = new MemoryStream();
-            await imageFile.CopyToAsync(stream);
-
-            stream.Position = 0;
-            var fileData = stream.ToArray();
-
-            var updatedCard = await mCardService.UpdateCardDisplayImage(id, $"{Guid.NewGuid()}.{MimeTypesMap.GetExtension(mimeType)}", fileData);
-
-            return Ok(mCardDTOMapper.ToDTO(updatedCard));
+            var uploadURLResponse = await mCardService.CreateCardDisplayImageUploadURL(id, uploadURLRequest.FileName);
+            return Ok(uploadURLResponse);
         }
 
-        [HttpPatch("{id}/card-image/update")]
+        [HttpPost("{id}/card-image/update")]
         [ProducesResponseType<CardDTO>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateCardImage(Guid id)
         {
-            var updatedCard = await mCardService.GenerateAndUpdateCardImage(id, $"CardImage-{Guid.NewGuid()}.png");
+            var updatedCard = await mCardService.GenerateAndUpdateCardImage(id);
             return Ok(mCardDTOMapper.ToDTO(updatedCard));
         }
 

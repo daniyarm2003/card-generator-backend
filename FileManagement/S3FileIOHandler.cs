@@ -55,6 +55,18 @@ namespace CardGeneratorBackend.FileManagement
             await mS3Client.PutObjectAsync(putRequest);
         }
 
+        public async Task WriteAllData(TrackedFile file, Stream dataStream)
+        {
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = mBucketName,
+                Key = file.Path,
+                InputStream = dataStream
+            };
+
+            await mS3Client.PutObjectAsync(putRequest);
+        }
+
         public string GetReadURL(TrackedFile file)
         {
             return $"https://{mBucketName}.s3.{mAWSRegionName}.amazonaws.com/{file.Path}";

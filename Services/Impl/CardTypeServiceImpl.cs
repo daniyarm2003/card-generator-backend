@@ -1,4 +1,5 @@
-﻿using CardGeneratorBackend.Config;
+﻿using System.Text.RegularExpressions;
+using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
@@ -48,7 +49,8 @@ namespace CardGeneratorBackend.Services.Impl
                 await mFileService.DeleteFile(type.ImageFile);
             }
 
-            var actualFileName = $"{type.Name}_{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+            var sanitizedTypeName = Regex.Replace(type.Name, "[^a-zA-Z0-9]", "");
+            var actualFileName = $"{sanitizedTypeName}_{Guid.NewGuid()}{Path.GetExtension(fileName)}";
 
             var imageFile = new TrackedFile()
             {
@@ -72,24 +74,6 @@ namespace CardGeneratorBackend.Services.Impl
                 UploadURL = uploadUrl,
                 ContentType = contentType
             };
-        }
-
-        public async Task<CardType> UpdateCardTypeImage(Guid typeId, string fileName, byte[] data)
-        {
-            var type = await GetCardTypeById(typeId);
-
-            type.ImageFile = await mFileService.WriteOrReplaceFileContents(type.ImageFile?.Id, new TrackedFile()
-            {
-                Path = fileName,
-                StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
-            }, data);
-
-            var savedTypeUpdateData = mDatabaseContext.CardTypes.Update(type);
-            var savedType = savedTypeUpdateData.Entity;
-
-            await mDatabaseContext.SaveChangesAsync();
-
-            return savedType;
         }
 
         public async Task<CardType> UpdateCardTypeWithId(Guid typeId, CardTypeUpdateDTO updateDTO)

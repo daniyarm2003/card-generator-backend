@@ -1,4 +1,5 @@
-﻿using CardGeneratorBackend.CardGeneration;
+﻿using System.Text.RegularExpressions;
+using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.DTO.Mappers;
@@ -127,27 +128,44 @@ namespace CardGeneratorBackend.Services.Impl
             return updatedCardResult.Entity;
         }
 
-        public async Task<Card> UpdateCardDisplayImage(Guid id, string filename, byte[] data)
+        public async Task<UploadURLResponseDTO> CreateCardDisplayImageUploadURL(Guid id, string filename)
         {
-            var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+            var card = await mDatabaseContext.Cards
                 .Where(card => card.Id == id)
+                .Include(card => card.DisplayImage)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
-            cardToUpdate.DisplayImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.DisplayImage?.Id, new TrackedFile()
+            if(card.DisplayImage is not null)
             {
-                Path = filename,
+                await mTrackedFileService.DeleteFile(card.DisplayImage);
+            }
+
+            var sanitizedCardName = Regex.Replace(card.Name, "[^a-zA-Z0-9]", "");
+            var actualFileName = $"DisplayImage_{sanitizedCardName}_{Guid.NewGuid()}{Path.GetExtension(filename)}";
+
+            var imageFile = new TrackedFile
+            {
+                Path = actualFileName,
                 StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
-            }, data);
+            };
 
-            var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
-            var savedCard = savedCardResult.Entity;
+            var createdImageData = await mDatabaseContext.TrackedFiles.AddAsync(imageFile);
+            card.DisplayImage = createdImageData.Entity;
 
+            mDatabaseContext.Cards.Update(card);
             await mDatabaseContext.SaveChangesAsync();
 
-            return savedCard;
+            var uploadURL = await mTrackedFileService.GetFileUploadURL(card.DisplayImage);
+            var contentType = HeyRed.Mime.MimeTypesMap.GetMimeType(card.DisplayImage.Path);
+
+            return new UploadURLResponseDTO
+            {
+                UploadURL = uploadURL,
+                ContentType = contentType
+            };
         }
 
-        public async Task<Card> GenerateAndUpdateCardImage(Guid id, string filename)
+        public async Task<Card> GenerateAndUpdateCardImage(Guid id)
         {
             var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
                 .Where(card => card.Id == id)
@@ -165,17 +183,24 @@ namespace CardGeneratorBackend.Services.Impl
             using var cardImage = SKImage.FromBitmap(cardBitmap);
             using var cardImageData = cardImage.Encode(SKEncodedImageFormat.Png, 100);
 
-            var imageStream = new MemoryStream();
-            cardImageData.SaveTo(imageStream);
+            if(cardToUpdate.CardImage is not null)
+            {
+                await mTrackedFileService.DeleteFile(cardToUpdate.CardImage);
+            }
 
-            imageStream.Position = 0;
-            byte[] imageData = imageStream.ToArray();
+            var sanitizedCardName = Regex.Replace(cardToUpdate.Name, "[^a-zA-Z0-9]", "");
+            var filename = $"CardImage_{sanitizedCardName}_{Guid.NewGuid()}.png";
 
-            cardToUpdate.CardImage = await mTrackedFileService.WriteOrReplaceFileContents(cardToUpdate.CardImage?.Id, new TrackedFile
+            var newCardImageFile = new TrackedFile
             {
                 Path = filename,
                 StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
-            }, imageData);
+            };
+
+            using(var imageStream = cardImageData.AsStream())
+            {
+                cardToUpdate.CardImage = await mTrackedFileService.CreateAndWriteFile(newCardImageFile, imageStream);
+            }
 
             var savedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
             var savedCard = savedCardResult.Entity;

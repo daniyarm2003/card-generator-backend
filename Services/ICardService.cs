@@ -16,9 +16,9 @@ namespace CardGeneratorBackend.Services
 
         public Task<Card> UpdateCardWithId(Guid id, CardUpdateDTO dto);
 
-        public Task<Card> UpdateCardDisplayImage(Guid id, string filename, byte[] data);
+        public Task<UploadURLResponseDTO> CreateCardDisplayImageUploadURL(Guid id, string filename);
 
-        public Task<Card> GenerateAndUpdateCardImage(Guid id, string filename);
+        public Task<Card> GenerateAndUpdateCardImage(Guid id);
 
         public Task DeleteCard(Card card);
     }

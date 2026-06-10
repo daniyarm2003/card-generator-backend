@@ -8,7 +8,7 @@ namespace CardGeneratorBackend.Services
 
     public interface ITrackedFileService : IDefaultFileMethodRetriever
     {
-        public Task<TrackedFile> CreateAndWriteFile(TrackedFile file, byte[] data);
+        public Task<TrackedFile> CreateAndWriteFile(TrackedFile file, Stream dataStream);
 
         public Task<byte[]> ReadFile(TrackedFile file);
 
@@ -21,8 +21,6 @@ namespace CardGeneratorBackend.Services
         public Task<FileDownloadInfo> ReadFileWithId(Guid id);
 
         public Task<FileStreamRetrievalInfo> GetFileReadStreamWithId(Guid id);
-
-        public Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data);
 
         public string GetFileReadURL(TrackedFile file);
 

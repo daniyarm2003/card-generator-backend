@@ -11,7 +11,8 @@ namespace CardGeneratorBackend.DTO.Mappers
         public CardDTO ToDTO(Card card)
         {
             return new CardDTO(card.Id, card.Variant, card.Name, card.Number, card.Level, card.Attack, card.Health, card.Quote,
-                card.Effect, card.CreatedAt, mCardTypeDTOMapper.ToDTO(card.Type), card.DisplayImage?.Id, card.CardImage?.Id);
+                card.Effect, card.CreatedAt, mCardTypeDTOMapper.ToDTO(card.Type), card.DisplayImage?.Id, card.DisplayImage != null ? mTrackedFileService.GetFileReadURL(card.DisplayImage) : null, 
+                card.CardImage != null ? mTrackedFileService.GetFileReadURL(card.CardImage) : null);
         }
     }
 }

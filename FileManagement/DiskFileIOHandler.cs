@@ -20,19 +20,25 @@ namespace CardGeneratorBackend.FileManagement
             return Path.Combine(DirectoryPath, file.Path);
         }
 
-        public Task<byte[]> ReadAllData(TrackedFile file)
+        public async Task<byte[]> ReadAllData(TrackedFile file)
         {
-            return File.ReadAllBytesAsync(GetRelativePath(file));
+            return await File.ReadAllBytesAsync(GetRelativePath(file));
         }
 
-        public Task<Stream> GetReadStream(TrackedFile file)
+        public async Task<Stream> GetReadStream(TrackedFile file)
         {
-            return Task.FromResult<Stream>(File.OpenRead(GetRelativePath(file)));
+            return await Task.FromResult<Stream>(File.OpenRead(GetRelativePath(file)));
         }
 
-        public Task WriteAllData(TrackedFile file, byte[] data)
+        public async Task WriteAllData(TrackedFile file, byte[] data)
         {
-            return File.WriteAllBytesAsync(GetRelativePath(file), data);
+            await File.WriteAllBytesAsync(GetRelativePath(file), data);
+        }
+
+        public async Task WriteAllData(TrackedFile file, Stream dataStream)
+        {
+            using var outputStream = File.OpenWrite(GetRelativePath(file));
+            await dataStream.CopyToAsync(outputStream);
         }
 
         public Task DeleteFile(TrackedFile file)
