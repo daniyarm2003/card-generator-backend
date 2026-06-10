@@ -1,15 +1,17 @@
 ﻿using CardGeneratorBackend.Config;
 using CardGeneratorBackend.Entities;
+using CardGeneratorBackend.Enums;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
 using Microsoft.EntityFrameworkCore;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class TrackedFileServiceImpl(CardDatabaseContext dbContext, IFileIOHandlerFactory fileIOHandlerFactory) : ITrackedFileService
+    public class TrackedFileServiceImpl(CardDatabaseContext dbContext, IFileIOHandlerFactory fileIOHandlerFactory, IDefaultFileMethodRetriever defaultFileMethodRetriever) : ITrackedFileService
     {
         private CardDatabaseContext DatabaseContext { get; } = dbContext;
         private IFileIOHandlerFactory FileIOHandlerFactory { get; } = fileIOHandlerFactory;
+        private IDefaultFileMethodRetriever DefaultFileMethodRetriever { get; } = defaultFileMethodRetriever;
 
 
         public async Task<TrackedFile> CreateAndWriteFile(TrackedFile file, byte[] data)
@@ -92,6 +94,23 @@ namespace CardGeneratorBackend.Services.Impl
 
             await ioHandler.WriteAllData(trackedFile, data);
             return trackedFile;
+        }
+
+        public FileStorageLocation GetDefaultStorageLocation()
+        {
+            return DefaultFileMethodRetriever.GetDefaultStorageLocation();
+        }
+
+        public string GetFileReadURL(TrackedFile file)
+        {
+            var ioHandler = FileIOHandlerFactory.GetIOHandler(file);
+            return ioHandler.GetReadURL(file);
+        }
+
+        public Task<string> GetFileUploadURL(TrackedFile file)
+        {
+            var ioHandler = FileIOHandlerFactory.GetIOHandler(file);
+            return ioHandler.GetUploadURL(file);
         }
     }
 }

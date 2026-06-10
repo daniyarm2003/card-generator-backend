@@ -1,6 +1,7 @@
 ﻿using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
+using CardGeneratorBackend.DTO.Mappers;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
@@ -9,14 +10,14 @@ using SkiaSharp;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory, IDefaultFileMethodRetriever fileMethodRetriever) : ICardService
+    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory, IDefaultFileMethodRetriever fileMethodRetriever, CardDTOMapper cardDTOMapper) : ICardService
     {
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ICardTypeService mCardTypeService = cardTypeService;
         private readonly ITrackedFileService mTrackedFileService = trackedFileService;
         private readonly ICardImageGeneratorFactory mCardImageGeneratorFactory = cardImageGeneratorFactory;
         private readonly IDefaultFileMethodRetriever mFileMethodRetriever = fileMethodRetriever;
-
+        private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
         private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
         {
             return inputQuery
@@ -152,7 +153,7 @@ namespace CardGeneratorBackend.Services.Impl
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
-            var cardDTO = cardToUpdate.GetDTO();
+            var cardDTO = mCardDTOMapper.ToDTO(cardToUpdate);
             var cardBitmap = new SKBitmap(500, 750);
 
             using var cardCanvas = new SKCanvas(cardBitmap);

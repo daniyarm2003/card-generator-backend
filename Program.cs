@@ -14,6 +14,7 @@ using CardGeneratorBackend.AWSUtils;
 using Amazon;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using CardGeneratorBackend.DTO.Mappers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,8 @@ builder.Services.Configure<GoogleServiceParameters>(
 
 builder.Services.Configure<AWSParameters>(
     builder.Configuration.GetSection(AWSParameters.ENV_OBJ_KEY));
+
+builder.Services.AddSingleton<EnvironmentHelper>();
 
 builder.Services.AddDbContext<CardDatabaseContext>();
 
@@ -114,6 +117,10 @@ builder.Services.AddScoped<ICardService, CardServiceImpl>();
 builder.Services.AddScoped<IFileUploadValidationService, FileExistAndSizeValidator>();
 
 builder.Services.AddScoped<ICardImageGeneratorFactory, DefaultCardImageGeneratorFactory>();
+
+// DTO Mappers
+builder.Services.AddScoped<CardTypeDTOMapper>();
+builder.Services.AddScoped<CardDTOMapper>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

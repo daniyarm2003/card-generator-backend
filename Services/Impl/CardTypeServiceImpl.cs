@@ -39,6 +39,41 @@ namespace CardGeneratorBackend.Services.Impl
             return await GetDefaultCardTypeQuery(mDatabaseContext.CardTypes.AsQueryable()).OrderBy(t => t.Name).ToListAsync();
         }
 
+        public async Task<UploadURLResponseDTO> CreateCardTypeImageUploadURL(Guid typeId, string fileName)
+        {
+            var type = await GetCardTypeById(typeId);
+
+            if(type.ImageFile != null)
+            {
+                await mFileService.DeleteFile(type.ImageFile);
+            }
+
+            var actualFileName = $"{type.Name}_{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+
+            var imageFile = new TrackedFile()
+            {
+                Path = actualFileName,
+                StorageLocation = mFileMethodRetriever.GetDefaultStorageLocation()
+            };
+
+            var createdImageFileData = await mDatabaseContext.TrackedFiles.AddAsync(imageFile) 
+                ?? throw new EntityNotSavedException(imageFile, $"Unable to create tracked file for card type with id {typeId}");
+
+            type.ImageFile = createdImageFileData.Entity;
+
+            mDatabaseContext.CardTypes.Update(type);
+            await mDatabaseContext.SaveChangesAsync();
+
+            var uploadUrl = await mFileService.GetFileUploadURL(type.ImageFile);
+            var contentType = HeyRed.Mime.MimeTypesMap.GetMimeType(type.ImageFile.Path);
+
+            return new UploadURLResponseDTO
+            {
+                UploadURL = uploadUrl,
+                ContentType = contentType
+            };
+        }
+
         public async Task<CardType> UpdateCardTypeImage(Guid typeId, string fileName, byte[] data)
         {
             var type = await GetCardTypeById(typeId);

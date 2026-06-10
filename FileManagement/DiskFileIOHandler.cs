@@ -6,11 +6,13 @@ namespace CardGeneratorBackend.FileManagement
     public class DiskFileIOHandler : IFileIOHandler
     {
         private string DirectoryPath { get; set; }
+        private string BackendURL { get; set; }
 
-        public DiskFileIOHandler(string dirPath)
+        public DiskFileIOHandler(string dirPath, string backendURL)
         {
             Directory.CreateDirectory(dirPath);
             DirectoryPath = dirPath;
+            BackendURL = backendURL;
         }
 
         private string GetRelativePath(TrackedFile file)
@@ -37,6 +39,16 @@ namespace CardGeneratorBackend.FileManagement
         {
             File.Delete(GetRelativePath(file));
             return Task.CompletedTask;
+        }
+
+        public string GetReadURL(TrackedFile file)
+        {
+            return $"{BackendURL}/api/files/{file.Id}/content";
+        }
+
+        public Task<string> GetUploadURL(TrackedFile file)
+        {
+            return Task.FromResult($"{BackendURL}/api/files/{file.Id}/content");
         }
     }
 }

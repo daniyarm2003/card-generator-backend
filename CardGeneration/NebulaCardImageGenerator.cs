@@ -16,7 +16,6 @@ namespace CardGeneratorBackend.CardGeneration
         {
             ArgumentNullException.ThrowIfNull(card);
             ArgumentException.ThrowIfNullOrEmpty(card.Name);
-            ArgumentNullException.ThrowIfNull(card.Number);
 
             using var radialShader = GetBackgroundGradientShader(NEBULA_BACKGROUND_COLOR_INNER, NEBULA_BACKGROUND_COLOR_OUTER, width, height);
 

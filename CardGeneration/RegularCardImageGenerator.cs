@@ -12,7 +12,6 @@ namespace CardGeneratorBackend.CardGeneration
         {
             ArgumentNullException.ThrowIfNull(card);
             ArgumentException.ThrowIfNullOrEmpty(card.Name);
-            ArgumentNullException.ThrowIfNull(card.Number);
 
             if (!SKColor.TryParse($"#{card.Type.BackgroundColorHexCode1}", out SKColor bgCol1))
             {

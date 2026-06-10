@@ -27,14 +27,4 @@ namespace CardGeneratorBackend.DTO
             Name = name;
         }
     }
-
-    public static class CardTypeCreationDTOMapper
-    {
-        public static CardType ToCreationEntity(this CardTypeCreationDTO dto) => new() {
-            BackgroundColorHexCode1 = dto.BackgroundColorHexCode1,
-            BackgroundColorHexCode2 = dto.BackgroundColorHexCode2,
-            Name = dto.Name,
-            TextColor = dto.TextColor
-        };
-    }
 }

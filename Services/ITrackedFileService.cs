@@ -1,11 +1,12 @@
 ﻿using CardGeneratorBackend.Entities;
+using CardGeneratorBackend.FileManagement;
 
 namespace CardGeneratorBackend.Services
 {
     public record FileDownloadInfo(string Name, byte[] Contents);
     public record FileStreamRetrievalInfo(string Name, Stream FileStream);
 
-    public interface ITrackedFileService
+    public interface ITrackedFileService : IDefaultFileMethodRetriever
     {
         public Task<TrackedFile> CreateAndWriteFile(TrackedFile file, byte[] data);
 
@@ -22,5 +23,9 @@ namespace CardGeneratorBackend.Services
         public Task<FileStreamRetrievalInfo> GetFileReadStreamWithId(Guid id);
 
         public Task<TrackedFile> WriteOrReplaceFileContents(Guid? fileId, TrackedFile? newFile, byte[] data);
+
+        public string GetFileReadURL(TrackedFile file);
+
+        public Task<string> GetFileUploadURL(TrackedFile file);
     }
 }

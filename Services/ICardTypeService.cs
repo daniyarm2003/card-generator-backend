@@ -11,6 +11,8 @@ namespace CardGeneratorBackend.Services
 
         public Task<CardType> CreateCardType(CardType creationData);
 
+        public Task<UploadURLResponseDTO> CreateCardTypeImageUploadURL(Guid typeId, string fileName);
+
         public Task<CardType> UpdateCardTypeImage(Guid typeId, string fileName, byte[] data);
 
         public Task<CardType> UpdateCardTypeWithId(Guid typeId, CardTypeUpdateDTO updateDTO);

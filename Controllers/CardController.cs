@@ -1,5 +1,6 @@
 ﻿using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.DTO;
+using CardGeneratorBackend.DTO.Mappers;
 using CardGeneratorBackend.Environment;
 using CardGeneratorBackend.Services;
 using HeyRed.Mime;
@@ -10,10 +11,11 @@ namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
     [Route("/api/cards")]
-    public class CardController(ICardService cardService, IFileUploadValidationService fileUploadValidationService) : ControllerBase
+    public class CardController(ICardService cardService, IFileUploadValidationService fileUploadValidationService, CardDTOMapper cardDTOMapper) : ControllerBase
     {
         private readonly ICardService mCardService = cardService;
         private readonly IFileUploadValidationService mFileUploadValidationService = fileUploadValidationService;
+        private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -25,14 +27,14 @@ namespace CardGeneratorBackend.Controllers
             if (pageSize is null)
             {
                 var cards = await mCardService.GetAllCards();
-                return Ok(cards.Select(card => card.GetDTO()));
+                return Ok(cards.Select(card => mCardDTOMapper.ToDTO(card)));
             }
             else
             {
                 pageNum ??= 1;
 
                 var data = await mCardService.GetCardsPaginated((int)pageNum, (int)pageSize);
-                return Ok(data.Select(card => card.GetDTO()));
+                return Ok(data.Select(card => mCardDTOMapper.ToDTO(card)));
             }
         }
 
@@ -43,7 +45,7 @@ namespace CardGeneratorBackend.Controllers
         public async Task<IActionResult> CreateCard([FromBody] CardCreationDTO dto)
         {
             var createdCard = await mCardService.CreateCard(dto);
-            return Ok(createdCard.GetDTO());
+            return Ok(mCardDTOMapper.ToDTO(createdCard));
         }
 
         [HttpPatch("{id}")]
@@ -54,7 +56,7 @@ namespace CardGeneratorBackend.Controllers
         public async Task<IActionResult> UpdateCard(Guid id, [FromBody] CardUpdateDTO dto)
         {
             var updatedCard = await mCardService.UpdateCardWithId(id, dto);
-            return Ok(updatedCard.GetDTO());
+            return Ok(mCardDTOMapper.ToDTO(updatedCard));
         }
 
         [HttpPut("{id}/image")]
@@ -87,7 +89,7 @@ namespace CardGeneratorBackend.Controllers
 
             var updatedCard = await mCardService.UpdateCardDisplayImage(id, $"{Guid.NewGuid()}.{MimeTypesMap.GetExtension(mimeType)}", fileData);
 
-            return Ok(updatedCard.GetDTO());
+            return Ok(mCardDTOMapper.ToDTO(updatedCard));
         }
 
         [HttpPatch("{id}/card-image/update")]
@@ -98,7 +100,7 @@ namespace CardGeneratorBackend.Controllers
         public async Task<IActionResult> UpdateCardImage(Guid id)
         {
             var updatedCard = await mCardService.GenerateAndUpdateCardImage(id, $"CardImage-{Guid.NewGuid()}.png");
-            return Ok(updatedCard.GetDTO());
+            return Ok(mCardDTOMapper.ToDTO(updatedCard));
         }
 
         [HttpDelete("{id}")]
@@ -110,7 +112,7 @@ namespace CardGeneratorBackend.Controllers
             var cardToDelete = await mCardService.GetCardById(id);
             await mCardService.DeleteCard(cardToDelete);
 
-            return Ok(cardToDelete);
+            return Ok(mCardDTOMapper.ToDTO(cardToDelete));
         }
     }
 }

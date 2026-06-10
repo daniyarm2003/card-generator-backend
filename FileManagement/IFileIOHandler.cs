@@ -11,5 +11,9 @@ namespace CardGeneratorBackend.FileManagement
         public Task WriteAllData(TrackedFile file, byte[] data);
 
         public Task DeleteFile(TrackedFile file);
+
+        public string GetReadURL(TrackedFile file);
+
+        public Task<string> GetUploadURL(TrackedFile file);
     }
 }
