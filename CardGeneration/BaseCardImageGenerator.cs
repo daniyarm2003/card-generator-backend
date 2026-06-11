@@ -153,13 +153,14 @@ namespace CardGeneratorBackend.CardGeneration
             }
 
             using var effectFont = CardImageUtils.CreateBasicFontFromFile("Assets/Righteous/Righteous-Regular.ttf", 20);
+            var defaultEffectFontHeight = effectFont.GetFontLineHeight();
             var effectBoxRect = GetEffectBoxRect(width, height, y);
 
             canvas.DrawRect(effectBoxRect, outlinePaint);
 
-            y += effectFont.GetFontLineHeight();
+            y += defaultEffectFontHeight;
 
-            canvas.WriteMultiLineCenteredText(card.Effect, effectFont, textPaint, width / 2, effectBoxRect.Width - 20.0f, ref y);
+            canvas.WriteMultiLineCenteredText(card.Effect, effectFont, textPaint, width / 2, effectBoxRect.Width - 20.0f, ref y, effectBoxRect.Height - defaultEffectFontHeight);
         }
 
         protected void DrawCardNumber(CardDTO card, SKCanvas canvas, SKPaint textPaint, int width, int height)
