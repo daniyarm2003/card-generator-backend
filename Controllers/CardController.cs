@@ -1,20 +1,15 @@
-﻿using CardGeneratorBackend.CardGeneration;
-using CardGeneratorBackend.DTO;
+﻿using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.DTO.Mappers;
-using CardGeneratorBackend.Environment;
 using CardGeneratorBackend.Services;
-using HeyRed.Mime;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace CardGeneratorBackend.Controllers
 {
     [ApiController]
     [Route("/api/cards")]
-    public class CardController(ICardService cardService, IFileUploadValidationService fileUploadValidationService, CardDTOMapper cardDTOMapper) : ControllerBase
+    public class CardController(ICardService cardService, CardDTOMapper cardDTOMapper) : ControllerBase
     {
         private readonly ICardService mCardService = cardService;
-        private readonly IFileUploadValidationService mFileUploadValidationService = fileUploadValidationService;
         private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
 
         [HttpGet]
@@ -22,20 +17,9 @@ namespace CardGeneratorBackend.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllCards(int? pageNum, int? pageSize)
+        public async Task<IActionResult> GetAllCards([FromQuery] CardRetrievalQueryDTO queryDTO)
         {
-            if (pageSize is null)
-            {
-                var cards = await mCardService.GetAllCards();
-                return Ok(cards.Select(mCardDTOMapper.ToDTO));
-            }
-            else
-            {
-                pageNum ??= 1;
-
-                var data = await mCardService.GetCardsPaginated((int)pageNum, (int)pageSize);
-                return Ok(data.Select(card => mCardDTOMapper.ToDTO(card)));
-            }
+            return Ok(await mCardService.GetCards(queryDTO));
         }
 
         [HttpPost]
@@ -88,9 +72,9 @@ namespace CardGeneratorBackend.Controllers
         public async Task<IActionResult> DeleteCard(Guid id)
         {
             var cardToDelete = await mCardService.GetCardById(id);
-            await mCardService.DeleteCard(cardToDelete);
+            await mCardService.DeleteCardById(id);
 
-            return Ok(mCardDTOMapper.ToDTO(cardToDelete));
+            return Ok(cardToDelete);
         }
     }
 }

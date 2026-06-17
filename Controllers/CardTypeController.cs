@@ -1,12 +1,7 @@
 ﻿using CardGeneratorBackend.DTO;
 using CardGeneratorBackend.DTO.Mappers;
-using CardGeneratorBackend.Environment;
-using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.Services;
-using HeyRed.Mime;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace CardGeneratorBackend.Controllers
 {

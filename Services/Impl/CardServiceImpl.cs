@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
@@ -19,34 +20,63 @@ namespace CardGeneratorBackend.Services.Impl
         private readonly ICardImageGeneratorFactory mCardImageGeneratorFactory = cardImageGeneratorFactory;
         private readonly IDefaultFileMethodRetriever mFileMethodRetriever = fileMethodRetriever;
         private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
-        private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
+
+        private static IQueryable<Card> WithIncludedCardRelations(IQueryable<Card> inputQuery)
         {
             return inputQuery
                 .Include(card => card.Type)
                     .ThenInclude(type => type.ImageFile)
                 .Include(card => card.DisplayImage)
-                .Include(card => card.CardImage)
+                .Include(card => card.CardImage);
+        }
+
+        private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
+        {
+            return WithIncludedCardRelations(inputQuery)
                 .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
                     .ThenBy(card => card.Number);
         }
 
-        public async Task<IEnumerable<Card>> GetAllCards()
+        public async Task<CardDTO> GetCardById(Guid id)
         {
-            var query = CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable());
-            return await query.ToListAsync();
+            var card = await WithIncludedCardRelations(mDatabaseContext.Cards)
+                .Where(c => c.Id == id)
+                .Select(c => mCardDTOMapper.ToDTO(c))
+                .FirstOrDefaultAsync() 
+                ?? throw new EntityNotFoundException(typeof(Card), id);
+
+            return card;
         }
 
-        public async Task<PaginationDTO<Card>> GetCardsPaginated(int pageNum, int pageSize)
+        public async Task<PaginationDTO<CardDTO>> GetCards(CardRetrievalQueryDTO queryDTO)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(pageNum, 1);
+            var cardQuery = mDatabaseContext.Cards.AsQueryable();
 
-            var query = CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable());
-            var count = await query.CountAsync();
+            if(queryDTO.Variant is not null)
+            {
+                cardQuery = cardQuery.Where(c => c.Variant == queryDTO.Variant);
+            }
 
-            query = query.Skip((pageNum - 1) * pageSize).Take(pageSize);
-            var data = await query.ToListAsync();
+            if(queryDTO.Level is not null)
+            {
+                cardQuery = cardQuery.Where(c => c.Level == queryDTO.Level);
+            }
 
-            return new(data, pageNum, pageSize, count);
+            cardQuery = WithIncludedCardRelations(cardQuery)
+                .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
+                    .ThenBy(card => card.Number);
+
+            var itemCount = await cardQuery.CountAsync();
+            var pageNum = queryDTO.PageSize is not null ? queryDTO.PageNum : 1;
+            var pageSize = queryDTO.PageSize ?? 1;
+
+            if(queryDTO.PageSize is not null)
+            {
+                cardQuery = cardQuery.Skip((queryDTO.PageNum - 1) * pageSize).Take(pageSize);
+            }
+
+            var data = cardQuery.Select(mCardDTOMapper.ToDTO).ToList();
+            return new(data, pageNum, pageSize, itemCount);
         }
 
         public async Task<Card> CreateCard(CardCreationDTO dto)
@@ -229,13 +259,13 @@ namespace CardGeneratorBackend.Services.Impl
             }
         }
 
-        public async Task<Card> GetCardById(Guid id)
+        public async Task DeleteCardById(Guid id)
         {
-            var card = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+            var cardToDelete = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
-            return card;
+            await DeleteCard(cardToDelete);
         }
     }
 }

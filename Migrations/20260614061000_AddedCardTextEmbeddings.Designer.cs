@@ -3,6 +3,7 @@ using System;
 using CardGeneratorBackend.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace CardGeneratorBackend.Migrations
 {
     [DbContext(typeof(CardDatabaseContext))]
-    partial class CardDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260614061000_AddedCardTextEmbeddings")]
+    partial class AddedCardTextEmbeddings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -140,29 +143,6 @@ namespace CardGeneratorBackend.Migrations
                             BackgroundColorHexCode2 = "ffffff",
                             Name = "None",
                             TextColor = "000000"
-                        });
-                });
-
-            modelBuilder.Entity("CardGeneratorBackend.Entities.GlobalState", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<bool>("ShouldUpdateCardEmbeddings")
-                        .HasColumnType("boolean")
-                        .HasColumnName("should_update_card_embeddings");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("global_state");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                            ShouldUpdateCardEmbeddings = true
                         });
                 });
 

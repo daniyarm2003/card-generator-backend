@@ -1,4 +1,5 @@
 ﻿using CardGeneratorBackend.Enums;
+using Pgvector;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CardGeneratorBackend.Entities
@@ -53,5 +54,8 @@ namespace CardGeneratorBackend.Entities
 
         [ForeignKey("CardImageId")]
         public TrackedFile? CardImage { get; set; }
+
+        [Column("text_embedding", TypeName = "vector(768)")]
+        public Vector? TextEmbedding { get; set; }
     }
 }

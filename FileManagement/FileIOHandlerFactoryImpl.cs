@@ -1,7 +1,6 @@
 ﻿using Amazon.S3;
 using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Environment;
-using Google.Apis.Drive.v3;
 using Microsoft.Extensions.Options;
 
 namespace CardGeneratorBackend.FileManagement

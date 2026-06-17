@@ -11,16 +11,22 @@ namespace CardGeneratorBackend.Config
         public DbSet<CardType> CardTypes { get; set; }
         public DbSet<TrackedFile> TrackedFiles { get; set; }
         public DbSet<Card> Cards { get; set; }
+        public DbSet<GlobalState> GlobalStateEntity { get; set; }
 
         private readonly string mConnectionString = pgOptions.Value.ConnectionString;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql(mConnectionString);
+            optionsBuilder.UseNpgsql(mConnectionString, npgSQL =>
+            {
+                npgSQL.UseVector();
+            });
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasPostgresExtension("vector");
+
             modelBuilder.Entity<TrackedFile>()
                 .Property(file => file.StorageLocation)
                 .HasConversion(
@@ -28,12 +34,17 @@ namespace CardGeneratorBackend.Config
                     locStr => Enum.Parse<FileStorageLocation>(locStr)
                 );
 
-            modelBuilder.Entity<Card>()
-                .Property(card => card.Variant)
-                .HasConversion(
-                    variant => variant.ToString(),
-                    variantStr => Enum.Parse<CardVariant>(variantStr)
-                );
+            modelBuilder.Entity<Card>(cardEntity =>
+            {
+                cardEntity.Property(card => card.Variant)
+                    .HasConversion(
+                        variant => variant.ToString(),
+                        variantStr => Enum.Parse<CardVariant>(variantStr)
+                    );
+
+                cardEntity.Property(card => card.TextEmbedding)
+                    .HasColumnType("vector(768)");
+            }); 
 
             modelBuilder.Entity<CardType>()
                 .HasData(new CardType() {
@@ -43,6 +54,18 @@ namespace CardGeneratorBackend.Config
                     BackgroundColorHexCode2 = "ffffff",
                     TextColor = "000000"
                 });
+
+            modelBuilder.Entity<GlobalState>()
+                .HasData(new GlobalState
+                {
+                    Id = new Guid(GlobalState.GLOBAL_STATE_UUID),
+                    ShouldUpdateCardEmbeddings = true
+                });
+        }
+
+        public async Task<GlobalState> GetGlobalState()
+        {
+            return await GlobalStateEntity.FirstAsync();
         }
     }
 }

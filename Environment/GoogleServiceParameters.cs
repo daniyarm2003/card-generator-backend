@@ -4,8 +4,9 @@
     {
         public const string ENV_OBJ_KEY = "Google";
 
-        public string GoogleServiceAccountCredentialsFileName { get; set; } = "";
-        public string GoogleDriveStorageFolderId { get; set; } = "";
-        public string GoogleDriveLinkedUserEmail { get; set; } = "";
+        public string GeminiAPIKey { get; set; } = "";
+        public string GeminiAPIFreeTier { get; set; } = "";
+
+        public bool IsGeminiAPIFreeTier => !bool.TryParse(GeminiAPIFreeTier.ToLower(), out bool result) || result;
     }
 }

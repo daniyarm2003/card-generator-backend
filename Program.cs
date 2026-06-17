@@ -3,18 +3,16 @@ using CardGeneratorBackend.Config;
 using CardGeneratorBackend.Environment;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
-using CardGeneratorBackend.GoogleUtils;
 using CardGeneratorBackend.Services;
 using CardGeneratorBackend.Services.Impl;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Drive.v3;
 using Amazon.S3;
 using Amazon.Runtime;
 using CardGeneratorBackend.AWSUtils;
 using Amazon;
 using Microsoft.Extensions.Options;
-using Microsoft.EntityFrameworkCore;
 using CardGeneratorBackend.DTO.Mappers;
+using CardGeneratorBackend.AI.Embeddings;
+using CardGeneratorBackend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,51 +49,19 @@ builder.Services.AddDbContext<CardDatabaseContext>();
 builder.Services.AddSingleton<IDefaultFileMethodRetriever, DefaultFileMethodRetrieverImpl>();
 builder.Services.AddSingleton<IFileIOHandlerFactory, FileIOHandlerFactoryImpl>();
 
-// Google service account utils setup
-builder.Services.AddSingleton<IGoogleCredentialFactory, DefaultGoogleServiceAccountCredentialFactory>();
+// Gemini setup
+builder.Services.AddSingleton(serviceProvider =>
+{
+    var geminiOptions = serviceProvider.GetService<IOptions<GoogleServiceParameters>>();
+    ArgumentNullException.ThrowIfNull(geminiOptions);
+
+    return new Google.GenAI.Client(apiKey: geminiOptions.Value.GeminiAPIKey);
+});
+
+builder.Services.AddSingleton<IEmbeddingService, GeminiEmbeddingService>();
 
 // AWS utils setup
 builder.Services.AddSingleton<IAWSCredentialFactory, DefaultAWSCredentialFactory>();
-
-builder.Services.AddSingleton(serviceProvider =>
-{
-    var credentialFactory = serviceProvider.GetService<IGoogleCredentialFactory>();
-    ArgumentNullException.ThrowIfNull(credentialFactory);
-
-    try
-    {
-        var credentialTask = credentialFactory.GetCredentials();
-        credentialTask.Wait();
-
-        return credentialTask.Result;
-    }
-    catch(Exception ex)
-    {
-        Console.WriteLine($"Error while getting Google credentials: {ex.Message}");
-        throw;
-    }
-});
-
-builder.Services.AddSingleton(serviceProvider =>
-{
-    GoogleCredential? credentials = null;
-
-    try
-    {
-        credentials = serviceProvider.GetService<GoogleCredential>();
-        ArgumentNullException.ThrowIfNull(credentials);
-    }
-    catch(Exception)
-    {
-        Console.WriteLine("Error while getting Google credentials for DriveService initialization. Check previous logs for details. DriveService will be initialized with null credentials, which will likely cause errors when used.");
-    }
-
-    return new DriveService(new Google.Apis.Services.BaseClientService.Initializer()
-    {
-        HttpClientInitializer = credentials,
-        ApplicationName = "DFA Card Generator"
-    });
-});
 
 builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
@@ -110,9 +76,12 @@ builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
     return awsCredentials != null ? new AmazonS3Client(awsCredentials, awsRegion) : new AmazonS3Client(awsRegion);
 });
 
+builder.Services.AddScoped<ScopedStartupProcedures>();
+
 builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
 builder.Services.AddScoped<ICardTypeService, CardTypeServiceImpl>();
 builder.Services.AddScoped<ICardService, CardServiceImpl>();
+builder.Services.AddScoped<ICardEmbeddingService, CardEmbeddingServiceImpl>();
 
 builder.Services.AddScoped<IFileUploadValidationService, FileExistAndSizeValidator>();
 
@@ -159,10 +128,8 @@ var app = builder.Build();
 // Apply database migrations on startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<CardDatabaseContext>();
-    db.Database.Migrate();
-
-    Console.WriteLine("Database migrations applied successfully");
+    var startupProcedures = scope.ServiceProvider.GetRequiredService<ScopedStartupProcedures>();
+    await startupProcedures.RunMainProcedure();
 }
 
 // Configure the HTTP request pipeline.
@@ -176,8 +143,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
-// app.UseAuthorization();
 app.MapControllers();
 
 app.UseCors();

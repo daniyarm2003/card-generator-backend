@@ -6,11 +6,9 @@ namespace CardGeneratorBackend.Services
 {
     public interface ICardService
     {
-        public Task<IEnumerable<Card>> GetAllCards();
+        public Task<PaginationDTO<CardDTO>> GetCards(CardRetrievalQueryDTO queryDTO);
 
-        public Task<Card> GetCardById(Guid id);
-
-        public Task<PaginationDTO<Card>> GetCardsPaginated(int pageNum, int pageSize);
+        public Task<CardDTO> GetCardById(Guid id);
 
         public Task<Card> CreateCard(CardCreationDTO dto);
 
@@ -21,5 +19,7 @@ namespace CardGeneratorBackend.Services
         public Task<Card> GenerateAndUpdateCardImage(Guid id);
 
         public Task DeleteCard(Card card);
+
+        public Task DeleteCardById(Guid id);
     }
 }

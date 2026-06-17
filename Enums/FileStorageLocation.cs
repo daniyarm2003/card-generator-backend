@@ -3,7 +3,6 @@
     public enum FileStorageLocation
     {
         Disk,
-        GoogleDrive,
         S3
     }
 }

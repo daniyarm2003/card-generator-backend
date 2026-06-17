@@ -4,7 +4,8 @@ PostgreSQL__Host=PostgreSQL database host
 PostgreSQL__Database=PostgreSQL database name
 PostgreSQL__Port=PostgreSQL database port
 
-Google__GoogleDriveStorageFolderId=Google Drive Folder ID
+Google__GeminiAPIKey=API Key for Gemini client
+Google__GeminiAPIFreeTier=true (default) if the Gemini free tier is being used, false otherwise
 
 AWS__AccessKey=AWS Access Key
 AWS__SecretKey=AWS Secret Key
