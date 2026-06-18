@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using CardGeneratorBackend.CardGeneration;
 using CardGeneratorBackend.Config;
 using CardGeneratorBackend.DTO;
@@ -8,11 +7,13 @@ using CardGeneratorBackend.Entities;
 using CardGeneratorBackend.Exceptions;
 using CardGeneratorBackend.FileManagement;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 using SkiaSharp;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory, IDefaultFileMethodRetriever fileMethodRetriever, CardDTOMapper cardDTOMapper) : ICardService
+    public class CardServiceImpl(CardDatabaseContext dbContext, ICardTypeService cardTypeService, ITrackedFileService trackedFileService, ICardImageGeneratorFactory cardImageGeneratorFactory, 
+        IDefaultFileMethodRetriever fileMethodRetriever, CardDTOMapper cardDTOMapper, ICardEmbeddingService cardEmbeddingService, ILogger<CardServiceImpl> logger) : ICardService
     {
         private readonly CardDatabaseContext mDatabaseContext = dbContext;
         private readonly ICardTypeService mCardTypeService = cardTypeService;
@@ -20,6 +21,8 @@ namespace CardGeneratorBackend.Services.Impl
         private readonly ICardImageGeneratorFactory mCardImageGeneratorFactory = cardImageGeneratorFactory;
         private readonly IDefaultFileMethodRetriever mFileMethodRetriever = fileMethodRetriever;
         private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
+        private readonly ICardEmbeddingService mCardEmbeddingService = cardEmbeddingService;
+        private readonly ILogger<CardServiceImpl> mLogger = logger;
 
         private static IQueryable<Card> WithIncludedCardRelations(IQueryable<Card> inputQuery)
         {
@@ -30,7 +33,7 @@ namespace CardGeneratorBackend.Services.Impl
                 .Include(card => card.CardImage);
         }
 
-        private static IQueryable<Card> CreateCardSelectQuery(IQueryable<Card> inputQuery)
+        private static IQueryable<Card> CreateDefaultCardQuery(IQueryable<Card> inputQuery)
         {
             return WithIncludedCardRelations(inputQuery)
                 .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
@@ -48,6 +51,17 @@ namespace CardGeneratorBackend.Services.Impl
             return card;
         }
 
+        private async Task<IQueryable<Card>> CreateSearchQuery(IQueryable<Card> query, string searchQuery)
+        {
+            ArgumentNullException.ThrowIfNull(searchQuery);
+
+            var queryEmbedding = await mCardEmbeddingService.GetCardSearchEmbedding(searchQuery);
+
+            return query
+                .Where(card => card.TextEmbedding != null)
+                .OrderBy(card => card.TextEmbedding!.CosineDistance(queryEmbedding));
+        }
+
         public async Task<PaginationDTO<CardDTO>> GetCards(CardRetrievalQueryDTO queryDTO)
         {
             var cardQuery = mDatabaseContext.Cards.AsQueryable();
@@ -62,9 +76,20 @@ namespace CardGeneratorBackend.Services.Impl
                 cardQuery = cardQuery.Where(c => c.Level == queryDTO.Level);
             }
 
-            cardQuery = WithIncludedCardRelations(cardQuery)
-                .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
-                    .ThenBy(card => card.Number);
+            cardQuery = WithIncludedCardRelations(cardQuery);
+
+            var sanitizedQuery = Regex.Replace(queryDTO.SearchQuery ?? "", "[^a-zA-Z0-9 ]", "").ToLower();
+
+            if(string.IsNullOrWhiteSpace(sanitizedQuery))
+            {
+                cardQuery = cardQuery
+                    .OrderBy(card => card.Variant == Enums.CardVariant.REGULAR ? 0 : 1)
+                        .ThenBy(card => card.Number);
+            }
+            else
+            {
+                cardQuery = await CreateSearchQuery(cardQuery, sanitizedQuery);
+            }
 
             var itemCount = await cardQuery.CountAsync();
             var pageNum = queryDTO.PageSize is not null ? queryDTO.PageNum : 1;
@@ -99,12 +124,24 @@ namespace CardGeneratorBackend.Services.Impl
             var createdCard = await mDatabaseContext.Cards.AddAsync(newCard);
             await mDatabaseContext.SaveChangesAsync();
 
+            try
+            {
+                createdCard.Entity.TextEmbedding = await mCardEmbeddingService.GetCardEmbedding(mCardDTOMapper.ToDTO(createdCard.Entity));
+                createdCard = mDatabaseContext.Cards.Update(createdCard.Entity);
+
+                await mDatabaseContext.SaveChangesAsync();
+            }
+            catch(Exception e)
+            {
+                mLogger.LogError(e, "Skipped updating embedding for card {} due to error", createdCard.Entity.Name);
+            }
+
             return createdCard.Entity;
         }
 
         public async Task<Card> UpdateCardWithId(Guid id, CardUpdateDTO dto)
         {
-            var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+            var cardToUpdate = await CreateDefaultCardQuery(mDatabaseContext.Cards.AsQueryable())
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
@@ -152,6 +189,15 @@ namespace CardGeneratorBackend.Services.Impl
                 }
             }
 
+            try
+            {
+                cardToUpdate.TextEmbedding = await mCardEmbeddingService.GetCardEmbedding(mCardDTOMapper.ToDTO(cardToUpdate));
+            }
+            catch(Exception e)
+            {
+                mLogger.LogError(e, "Skipped updating embedding for card {} due to error", cardToUpdate.Name);
+            }
+
             var updatedCardResult = mDatabaseContext.Cards.Update(cardToUpdate);
             await mDatabaseContext.SaveChangesAsync();
 
@@ -197,7 +243,7 @@ namespace CardGeneratorBackend.Services.Impl
 
         public async Task<Card> GenerateAndUpdateCardImage(Guid id)
         {
-            var cardToUpdate = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+            var cardToUpdate = await CreateDefaultCardQuery(mDatabaseContext.Cards.AsQueryable())
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 
@@ -261,7 +307,7 @@ namespace CardGeneratorBackend.Services.Impl
 
         public async Task DeleteCardById(Guid id)
         {
-            var cardToDelete = await CreateCardSelectQuery(mDatabaseContext.Cards.AsQueryable())
+            var cardToDelete = await CreateDefaultCardQuery(mDatabaseContext.Cards.AsQueryable())
                 .Where(card => card.Id == id)
                 .FirstOrDefaultAsync() ?? throw new EntityNotFoundException(typeof(Card), id);
 

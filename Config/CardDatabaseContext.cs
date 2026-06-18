@@ -12,6 +12,7 @@ namespace CardGeneratorBackend.Config
         public DbSet<TrackedFile> TrackedFiles { get; set; }
         public DbSet<Card> Cards { get; set; }
         public DbSet<GlobalState> GlobalStateEntity { get; set; }
+        public DbSet<DatabaseEmbeddingCacheEntry> EmbeddingCacheEntries { get; set; }
 
         private readonly string mConnectionString = pgOptions.Value.ConnectionString;
 
@@ -61,6 +62,14 @@ namespace CardGeneratorBackend.Config
                     Id = new Guid(GlobalState.GLOBAL_STATE_UUID),
                     ShouldUpdateCardEmbeddings = true
                 });
+
+            modelBuilder.Entity<DatabaseEmbeddingCacheEntry>(builder =>
+            {
+                builder.HasKey(entry => entry.Text);
+
+                builder.Property(entity => entity.Embedding)
+                    .HasColumnType("vector(768)");
+            });
         }
 
         public async Task<GlobalState> GetGlobalState()

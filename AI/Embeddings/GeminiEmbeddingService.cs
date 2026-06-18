@@ -14,14 +14,27 @@ namespace CardGeneratorBackend.AI.Embeddings
             return new Vector(responseObj?.Values?.Select(x => (float)x).ToArray());
         }
 
-        public async Task<Vector> GetEmbedding(string text)
+        public async Task<Vector> GetEmbedding(string text, IEmbeddingCachingStrategy? cachingStrategy)
         {
+            var cachedResponse = cachingStrategy != null ? await cachingStrategy.GetCachedEmbedding(text) : null;
+            if(cachedResponse != null)
+            {
+                return cachedResponse;
+            }
+
             var response = await mGeminiClient.Models.EmbedContentAsync(MODEL_NAME, text, new EmbedContentConfig {
                 OutputDimensionality = 768
             });
 
-            return GetEmbeddingFromResponseObject(response.Embeddings?.First()) 
+            var embedding = GetEmbeddingFromResponseObject(response.Embeddings?.First()) 
                 ?? throw new EmbeddingException("Unable to generate an embedding for the given string");
+
+            if(cachingStrategy != null)
+            {
+                await cachingStrategy.CacheEmbedding(text, embedding);
+            }
+
+            return embedding;
         }
 
         public async Task<IList<Vector>> GetAllEmbeddings(IList<string> items)

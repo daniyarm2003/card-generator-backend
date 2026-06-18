@@ -58,8 +58,6 @@ builder.Services.AddSingleton(serviceProvider =>
     return new Google.GenAI.Client(apiKey: geminiOptions.Value.GeminiAPIKey);
 });
 
-builder.Services.AddSingleton<IEmbeddingService, GeminiEmbeddingService>();
-
 // AWS utils setup
 builder.Services.AddSingleton<IAWSCredentialFactory, DefaultAWSCredentialFactory>();
 
@@ -77,6 +75,9 @@ builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 });
 
 builder.Services.AddScoped<ScopedStartupProcedures>();
+
+builder.Services.AddKeyedScoped<IEmbeddingCachingStrategy, DatabaseEmbeddingCachingStrategy>("embedding_db_cache");
+builder.Services.AddScoped<IEmbeddingService, GeminiEmbeddingService>();
 
 builder.Services.AddScoped<ITrackedFileService, TrackedFileServiceImpl>();
 builder.Services.AddScoped<ICardTypeService, CardTypeServiceImpl>();

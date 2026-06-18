@@ -7,17 +7,26 @@ using CardGeneratorBackend.Environment;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Extensions;
+using Pgvector;
 
 namespace CardGeneratorBackend.Services.Impl
 {
-    class CardEmbeddingServiceImpl(IEmbeddingService embeddingService, CardDatabaseContext databaseContext, IOptions<GoogleServiceParameters> geminiParams, CardDTOMapper cardDTOMapper, ILogger<CardEmbeddingServiceImpl> logger) : ICardEmbeddingService
+    class CardEmbeddingServiceImpl(IEmbeddingService embeddingService, CardDatabaseContext databaseContext, IOptions<GoogleServiceParameters> geminiParams, CardDTOMapper cardDTOMapper, ILogger<CardEmbeddingServiceImpl> logger, [FromKeyedServices("embedding_db_cache")] IEmbeddingCachingStrategy cachingStrategy) : ICardEmbeddingService
     {
         private readonly IEmbeddingService mEmbeddingService = embeddingService;
         private readonly CardDatabaseContext mDatabaseContext = databaseContext;
         private readonly CardDTOMapper mCardDTOMapper = cardDTOMapper;
         private readonly ILogger<CardEmbeddingServiceImpl> mLogger = logger;
 
+        private readonly IEmbeddingCachingStrategy mCachingStrategy = cachingStrategy;
+
         private readonly bool mIsFreeTier = geminiParams.Value.IsGeminiAPIFreeTier;
+
+        public async Task<Vector> GetCardEmbedding(CardDTO card)
+        {
+            var embedText = GetCardEmbedText(card);
+            return await mEmbeddingService.GetEmbedding(embedText, null);
+        }
 
         public string GetCardEmbedText(CardDTO card)
         {
@@ -26,16 +35,21 @@ namespace CardGeneratorBackend.Services.Impl
 
             Name: {card.Name}
             Type: {card.Type.Name}
-            Quote: {card.Quote ?? ""}
-            Effect: {Regex.Replace(card.Effect ?? "", "\\s+", "")}
+            Quote: {card.Quote ?? "No Quote"}
+            Effect: {Regex.Replace(card.Effect ?? "No Effect", "\\s+", "")}
             """;
+        }
+
+        public async Task<Vector> GetCardSearchEmbedding(string searchQuery)
+        {
+            return await mEmbeddingService.GetEmbedding(searchQuery, mCachingStrategy);
         }
 
         public async Task UpdateAllCardEmbeddings(bool skipExisting)
         {
             mLogger.LogInformation("Updating all card embeddings");
 
-            int maxBatchSize = mIsFreeTier ? 2 : 5000;
+            int maxBatchSize = mIsFreeTier ? 20 : 5000;
             int batchCooldownSeconds = 90;
 
             var cardQuery = mDatabaseContext.Cards.AsQueryable();
@@ -88,10 +102,10 @@ namespace CardGeneratorBackend.Services.Impl
                 }
             }
 
+            await mDatabaseContext.SaveChangesAsync();
+
             await mDatabaseContext.GlobalStateEntity.ExecuteUpdateAsync(setters => setters
                 .SetProperty(state => state.ShouldUpdateCardEmbeddings, false));
-
-            await mDatabaseContext.SaveChangesAsync();
 
             mLogger.LogInformation("Updated all card embeddings");
         }
